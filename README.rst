@@ -13,6 +13,11 @@ there::
 
     pip install im-data-manager-job-decoder
 
+Once installed you can access the protocol buffers with:
+
+>>> from decoder import decoder
+>>> decoder.decode(text, variables, 'command', decoder.TextEncoding.JINJA2_3_0)
+
 .. _PyPI: https://pypi.org/project/im-data-manager-job-decoder
 
 Get in touch
