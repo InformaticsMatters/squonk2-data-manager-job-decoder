@@ -20,7 +20,7 @@ def get_long_description():
 
 setup(
 
-    name='im-dm-job-decoder',
+    name='im-data-manager-job-decoder',
     version=os.environ.get('GITHUB_REF_SLUG', '1.0.0'),
     author='Alan Christie',
     author_email='achristie@informaticsmatters.com',
