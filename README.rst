@@ -5,6 +5,21 @@ Informatics Matters Data Manager Job Decoder
    :target: https://badge.fury.io/py/im-data-manager-job-decoder
    :alt: PyPI package (latest)
 
+A package that simplifies the decoding of encoded text strings.
+Given an encoded string the ``decode()`` method
+returns the decoded value or an error.
+
+For example, given the following `jinja2`_ encoded string
+``'{{ foo }}, bar={{ bar }}, baz={{ baz }}'`` and variable map
+``{'foo': 1, 'bar': 2, 'baz': 3}`` the decoder returns
+the string ``'foo=1, bar=2, baz=3'``.
+
+The following encoding/decoding formats are supported: -
+
+- jinja2 (3.0)
+
+.. _jinja2: https://jinja.palletsprojects.com/en/3.0.x/
+
 Installation (Python)
 =====================
 
@@ -16,7 +31,7 @@ there::
 Once installed you can access the protocol buffers with:
 
 >>> from decoder import decoder
->>> decoder.decode(text, variables, 'command', decoder.TextEncoding.JINJA2_3_0)
+>>> decoded, success = decoder.decode(text, variables, 'command', decoder.TextEncoding.JINJA2_3_0)
 
 .. _PyPI: https://pypi.org/project/im-data-manager-job-decoder
 
