@@ -131,7 +131,7 @@ definitions:
       pull-secret:
         $ref: '#/definitions/rfc-1035-name'
       environment:
-        $ref: '#/definitions/env-var-name'
+        $ref: '#/definitions/environment'
     required:
     - name
     - tag
@@ -152,7 +152,7 @@ definitions:
     additionalProperties: false
     properties:
       name:
-        $ref: '#/definitions/environment-name'
+        $ref: '#/definitions/env-var-name'
       value-from:
         type: object
         properties:
