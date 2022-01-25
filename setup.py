@@ -33,6 +33,7 @@ setup(
 
     # Our modules to package
     packages=['decoder'],
+    include_package_data=True,
 
     # Project classification:
     # https://pypi.python.org/pypi?%3Aaction=list_classifiers
