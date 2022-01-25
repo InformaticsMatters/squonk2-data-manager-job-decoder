@@ -18,6 +18,10 @@ The following encoding/decoding formats are supported: -
 
 - jinja2 (3.0)
 
+The package also provides a ``validate_job_schema()`` function,
+which can (should) be used to validate the Job definition against the
+built-in schema.
+
 .. _jinja2: https://jinja.palletsprojects.com/en/3.0.x/
 
 Installation (Python)
@@ -28,9 +32,14 @@ there::
 
     pip install im-data-manager-job-decoder
 
-Once installed you can access the protocol buffers with:
+Once installed you can validate the definition (expected to be a dictionary
+formed from the definition YAML file) with:
 
 >>> from decoder import decoder
+>>> error = decoder.validate_job_schema(job_defintion)
+
+And run the decoder with:
+
 >>> decoded, success = decoder.decode(text, variables, 'command', decoder.TextEncoding.JINJA2_3_0)
 
 .. _PyPI: https://pypi.org/project/im-data-manager-job-decoder
