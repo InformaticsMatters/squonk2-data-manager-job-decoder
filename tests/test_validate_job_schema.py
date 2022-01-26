@@ -1,15 +1,15 @@
 # Tests for the schema validator.
 from typing import Any, Dict
+from copy import deepcopy
 
 import pytest
 pytestmark = pytest.mark.unit
 
 from decoder import decoder
 
-
-def test_validate_minimal():
-    # Arrange
-    text: Dict[str, Any] = {
+# A minimal Job Definition.
+# Tests can use this and adjust accordingly.
+_MINIMAL: Dict[str, Any] = {
         'kind': 'DataManagerJobDefinition',
         'kind-version': '2021.1',
         'collection': 'test',
@@ -21,6 +21,45 @@ def test_validate_minimal():
                                     'tag': '1.0.0',
                                     'project-directory': '/data'},
                           'command': 'sys.exit(1)'}}}
+
+
+def test_validate_minimal():
+    # Arrange
+
+    # Act
+    error = decoder.validate_job_schema(_MINIMAL)
+
+    # Assert
+    assert error is None
+
+
+def test_validate_image_env_from_api_token():
+    # Arrange
+    text: Dict[str, Any] = deepcopy(_MINIMAL)
+    demo_job: Dict[str, Any] = text['jobs']['demo']
+    demo_job['image']['environment'] = \
+        [{'name': 'ENV_VAR',
+          'value-from': {
+              'api-token': {
+                  'roles': ['abc']}}}]
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
+def test_validate_image_env_from_secret():
+    # Arrange
+    text: Dict[str, Any] = deepcopy(_MINIMAL)
+    demo_job: Dict[str, Any] = text['jobs']['demo']
+    demo_job['image']['environment'] = \
+        [{'name': 'ENV_VAR',
+          'value-from': {
+              'secret': {
+                  'name': 'secret-a',
+                  'key': 'secret'}}}]
 
     # Act
     error = decoder.validate_job_schema(text)

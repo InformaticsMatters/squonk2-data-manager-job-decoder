@@ -142,36 +142,74 @@ definitions:
     type: array
     items:
       anyOf:
-      - $ref: '#/definitions/environment-value-from-api-token'
+      - $ref: '#/definitions/environment-value-from'
 
-  # An Image environment from an 'api-token'.
-  # Roles is an optional list of API token realm roles where, for now,
-  # we limit the number in the list to a maximum 1.
-  environment-value-from-api-token:
+  # An Image environment from something else.
+  environment-value-from:
     type: object
     additionalProperties: false
     properties:
       name:
         $ref: '#/definitions/env-var-name'
       value-from:
-        type: object
-        properties:
-          api-token:
-            type: object
-            properties:
-              roles:
-                type: array
-                items:
-                  type: string
-                  pattern: '^[a-z]{1,}[a-z-_]{0,}$'
-                minItems: 0
-                maxItems: 1
-                uniqueItems: true
-        required:
-        - api-token
+        oneOf:
+        - $ref: '#/definitions/environment-value-from-api-token'
+        - $ref: '#/definitions/environment-value-from-secret'
     required:
     - name
     - value-from
+
+  # Declaration for value-from 'api-token'.
+  # User provides a list of roles (which can be empty).
+  # Here, we limit the number of roles to 1.
+  environment-value-from-api-token:
+    type: object
+    additionalProperties: false
+    properties:
+      api-token:
+        type: object
+        properties:
+          roles:
+            type: array
+            items:
+              type: string
+              pattern: '^[a-z]{1,}[a-z-_]{0,}$'
+            minItems: 0
+            maxItems: 1
+            uniqueItems: true
+        required:
+        - roles
+    required:
+    - api-token
+
+  # An Image environment from a Kubernetes 'secret'.
+  # At the moment we expect the secret to be unencrypted,
+  # just 'opaque', so it can be read by the DM without special actions.
+  environment-value-from-secret:
+    type: object
+    additionalProperties: false
+    properties:
+      secret:
+        type: object
+        properties:
+          # The name of the secret object,
+          # i.e. its metadata->name.
+          name:
+            $ref: '#/definitions/rfc-1035-name'
+          # The name of the key in the secret.
+          # - Begins with lowercase letter
+          # - Then lower-case alphanumeric including '-', '_' and '.'
+          # - Ends begins with lower-case alphanumeric
+          key:
+            type: string
+            minLength: 1
+            maxLength: 63
+            pattern: '^[a-z]([a-z0-9-_.]*[a-z0-9])?$'
+        required:
+        - name
+        - key
+    required:
+    - secret
 
   # The pattern for Image environment names.
   # Classic linux/shell,
