@@ -154,6 +154,7 @@ definitions:
       value-from:
         oneOf:
         - $ref: '#/definitions/environment-value-from-api-token'
+        - $ref: '#/definitions/environment-value-from-constant'
         - $ref: '#/definitions/environment-value-from-secret'
     required:
     - name
@@ -181,6 +182,22 @@ definitions:
         - roles
     required:
     - api-token
+
+  # An Image environment from a constant.
+  environment-value-from-constant:
+    type: object
+    additionalProperties: false
+    properties:
+      constant:
+        type: object
+        properties:
+          # The hard-coded value (constant)
+          value:
+            type: string
+        required:
+        - value
+    required:
+    - constant
 
   # An Image environment from a Kubernetes 'secret'.
   # At the moment we expect the secret to be unencrypted,

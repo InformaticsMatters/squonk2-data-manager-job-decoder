@@ -50,6 +50,23 @@ def test_validate_image_env_from_api_token():
     assert error is None
 
 
+def test_validate_image_env_from_constant():
+    # Arrange
+    text: Dict[str, Any] = deepcopy(_MINIMAL)
+    demo_job: Dict[str, Any] = text['jobs']['demo']
+    demo_job['image']['environment'] = \
+        [{'name': 'ENV_VAR',
+          'value-from': {
+              'constant': {
+                  'value': '123'}}}]
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
 def test_validate_image_env_from_secret():
     # Arrange
     text: Dict[str, Any] = deepcopy(_MINIMAL)
