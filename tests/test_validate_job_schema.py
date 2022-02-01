@@ -83,3 +83,55 @@ def test_validate_image_env_from_secret():
 
     # Assert
     assert error is None
+
+
+def test_validate_image_memory_32gi():
+    # Arrange
+    text: Dict[str, Any] = deepcopy(_MINIMAL)
+    demo_job: Dict[str, Any] = text['jobs']['demo']
+    demo_job['image']['memory'] = '32Gi'
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
+def test_validate_image_memory_500Mi():
+    # Arrange
+    text: Dict[str, Any] = deepcopy(_MINIMAL)
+    demo_job: Dict[str, Any] = text['jobs']['demo']
+    demo_job['image']['memory'] = '500Mi'
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
+def test_validate_image_cores_1():
+    # Arrange
+    text: Dict[str, Any] = deepcopy(_MINIMAL)
+    demo_job: Dict[str, Any] = text['jobs']['demo']
+    demo_job['image']['cores'] = 1
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
+def test_validate_image_cores_32():
+    # Arrange
+    text: Dict[str, Any] = deepcopy(_MINIMAL)
+    demo_job: Dict[str, Any] = text['jobs']['demo']
+    demo_job['image']['cores'] = 32
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
