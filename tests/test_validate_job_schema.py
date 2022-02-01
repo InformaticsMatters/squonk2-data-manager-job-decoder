@@ -98,11 +98,11 @@ def test_validate_image_memory_32gi():
     assert error is None
 
 
-def test_validate_image_memory_500Mi():
+def test_validate_image_memory_4mi():
     # Arrange
     text: Dict[str, Any] = deepcopy(_MINIMAL)
     demo_job: Dict[str, Any] = text['jobs']['demo']
-    demo_job['image']['memory'] = '500Mi'
+    demo_job['image']['memory'] = '4Mi'
 
     # Act
     error = decoder.validate_job_schema(text)

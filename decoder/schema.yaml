@@ -149,12 +149,11 @@ definitions:
     maximum: 32
 
   # A kubernetes memory declaration.
-  # Here we only accept between 1 and 4 numbers
-  # and force a restricted suffix (Mi or Gi)
+  # Here we allow a 4-digit Mi value (minimum of 4Mi)
+  # or a 2-digit Gi value (minimum of 1G).
   memory:
     type: string
-    minLength: 1
-    pattern: '^[1-9][0-9]{0,3}(Gi|Mi)$'
+    pattern: '^(([4-9]|[1-9][0-9]{1,3})Mi|[1-9][0-9]{0,1}Gi)$'
 
   # Image environment definitions.
   environment:
