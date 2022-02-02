@@ -19,10 +19,14 @@ properties:
   description:
     type: string
   job-definition-files:
+    # Filenames must be url-compliant strings.
+    # Here we limited to starting with a letter
+    # followed by letters, numbers or . - _
+    # and ending '.yaml' or '.yml'
     type: array
     items:
       type: string
-      pattern: '^.{1,}(.yaml|.yml)$'
+      pattern: '^[a-zA-Z]{1,}[a-zA-Z0-9._-]{0,}(.yaml|.yml)$'
       maxLength: 255
     minItems: 1
 required:
