@@ -15,17 +15,28 @@ import yaml
 # The modules are expected to be called 'decode_<TextEncoding.lower()>'
 from . import decode_jinja2_3_0
 
-# The (built-in) Job Definition schema...
+# The (built-in) schemas...
 # from the same directory as us.
-_SCHEMA_FILE: str = os.path.join(os.path.dirname(__file__), 'schema.yaml')
+_JD_SCHEMA_FILE: str = os.path.join(os.path.dirname(__file__),
+                                    'job-definition-schema.yaml')
+_MANIFEST_SCHEMA_FILE: str = os.path.join(os.path.dirname(__file__),
+                                          'manifest-schema.yaml')
 
-# Load the schema YAML file now.
+# Load the JD schema YAML file now.
 # This must work as the file is installed along with this module.
-_JOB_SCHEMA: Dict[str, Any] = {}
-assert os.path.isfile(_SCHEMA_FILE)
-with open(_SCHEMA_FILE, 'r', encoding='utf8') as schema_file:
-    _JOB_SCHEMA = yaml.load(schema_file, Loader=yaml.FullLoader)
-assert _JOB_SCHEMA
+assert os.path.isfile(_JD_SCHEMA_FILE)
+with open(_JD_SCHEMA_FILE, 'r', encoding='utf8') as schema_file:
+    _JOB_DEFINITION_SCHEMA: Dict[str, Any] =\
+        yaml.load(schema_file, Loader=yaml.FullLoader)
+assert _JOB_DEFINITION_SCHEMA
+
+# Load the Manifest schema YAML file now.
+# This must work as the file is installed along with this module.
+assert os.path.isfile(_MANIFEST_SCHEMA_FILE)
+with open(_MANIFEST_SCHEMA_FILE, 'r', encoding='utf8') as schema_file:
+    _MANIFEST_SCHEMA: Dict[str, Any] =\
+        yaml.load(schema_file, Loader=yaml.FullLoader)
+assert _MANIFEST_SCHEMA
 
 
 class TextEncoding(enum.Enum):
@@ -34,16 +45,33 @@ class TextEncoding(enum.Enum):
     JINJA2_3_0 = 1      # Encoding that complies with Jinja2 v3.0.x
 
 
+def validate_manifest_schema(manifest: Dict[str, Any]) -> Optional[str]:
+    """Checks the Job Definition Manifest (a preloaded job-definition dictionary)
+    against the built-in schema. If there's an error the error text is
+    returned, otherwise None.
+    """
+    assert isinstance(manifest, dict)
+
+    # Validate the Manifest against our schema
+    try:
+        jsonschema.validate(manifest, schema=_MANIFEST_SCHEMA)
+    except jsonschema.ValidationError as ex:
+        return str(ex.message)
+
+    # OK if we get here
+    return None
+
+
 def validate_job_schema(job_definition: Dict[str, Any]) -> Optional[str]:
     """Checks the Job Definition (a preloaded job-definition dictionary)
     against the built-in schema. If there's an error the error text is
     returned, otherwise None.
     """
-    assert job_definition
+    assert isinstance(job_definition, dict)
 
     # Validate the Job Definition against our schema
     try:
-        jsonschema.validate(job_definition, schema=_JOB_SCHEMA)
+        jsonschema.validate(job_definition, schema=_JOB_DEFINITION_SCHEMA)
     except jsonschema.ValidationError as ex:
         return str(ex.message)
 

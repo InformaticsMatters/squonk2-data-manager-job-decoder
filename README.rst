@@ -18,9 +18,10 @@ The following encoding/decoding formats are supported: -
 
 - jinja2 (3.0)
 
-The package also provides a ``validate_job_schema()`` function,
-which can (should) be used to validate the Job definition against the
-built-in schema.
+The package also provides ``validate_job_schema()`` and
+``validate_manifest_schema()`` functions, which can (should) be used to
+validate the Manifests and Job definitions against the
+built-in schemas.
 
 .. _jinja2: https://jinja.palletsprojects.com/en/3.0.x/
 
@@ -36,7 +37,8 @@ Once installed you can validate the definition (expected to be a dictionary
 formed from the definition YAML file) with:
 
 >>> from decoder import decoder
->>> error = decoder.validate_job_schema(job_defintion)
+>>> error = decoder.validate_manifest_schema(manifest)
+>>> error = decoder.validate_job_schema(job_definition)
 
 And run the decoder with:
 

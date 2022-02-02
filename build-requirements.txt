@@ -1,3 +1,4 @@
-pyroma == 3.2
-pytest == 6.2.5
-pytest-cov == 3.0.0
+pyroma
+pytest
+pytest-cov
+mypy

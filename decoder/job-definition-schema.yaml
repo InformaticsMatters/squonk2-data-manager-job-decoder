@@ -21,7 +21,7 @@ properties:
     type: string
     maxLength: 80
   description:
-    tyep: string
+    type: string
   collection:
     type: string
     minLength: 1
@@ -107,7 +107,7 @@ definitions:
       name:
         type: string
         minLength: 1
-        maxLenght: 120
+        maxLength: 120
       tag:
         type: string
         minLength: 1
