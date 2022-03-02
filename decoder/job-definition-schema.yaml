@@ -8,7 +8,8 @@ $schema: http://json-schema.org/draft-07/schema#
 title: Data Manager Job Definition
 description: >-
   Defines one or more jobs that can be executed
-  by the Data manager Job Operator
+  by the Data manager Job Operator, and tests that can be automated
+  by the Job Tester (jote)
 
 type: object
 properties:
@@ -91,11 +92,13 @@ definitions:
         type: string
         minLength: 1
         maxLength: 4096
+      tests:
+        $ref: '#/definitions/job-test'
     required:
+    - name
     - version
     - image
     - command
-    - name
 
   # A Job container image
   # The 'type' is optional and is used to indicate
@@ -159,8 +162,7 @@ definitions:
   environment:
     type: array
     items:
-      anyOf:
-      - $ref: '#/definitions/environment-value-from'
+      $ref: '#/definitions/environment-value-from'
 
   # An Image environment from something else.
   environment-value-from:
@@ -260,3 +262,95 @@ definitions:
     minLength: 1
     maxLength: 63
     pattern: '^[a-z]([a-z0-9-]*[a-z0-9])?$'
+
+  # An individual Test.
+  # Consists of a identity (i.e. 'test-filter-molecules')
+  # followed by a Test object.
+  job-test:
+    type: object
+    additionalProperties: false
+    patternProperties:
+      '^[a-z]{1}[a-z0-9-]{0,79}$':
+        $ref: '#/definitions/test'
+    minProperties: 1
+
+  # An individual Test
+  test:
+    type: object
+    additionalProperties: false
+    properties:
+      run-level:
+        type: integer
+        minimum: 1
+        maximum: 100
+      ignore:
+        type: 'null'
+      inputs:
+        $ref: '#/definitions/test-input'
+      options:
+        $ref: '#/definitions/test-option'
+      checks:
+        type: object
+        properties:
+          exitCode:
+            type: integer
+          outputs:
+            type: array
+            items:
+              $ref: '#/definitions/test-checks-output'
+        required:
+        - exitCode
+
+  # A test input
+  test-input:
+    type: object
+    additionalProperties: false
+    patternProperties:
+      '^[a-zA-Z]{1}[a-zA-Z0-9_-]{0,31}$':
+        type: string
+
+  # A test option
+  test-option:
+    type: object
+    additionalProperties: false
+    patternProperties:
+      '^[a-zA-Z]{1}[a-zA-Z0-9_-]{0,31}$':
+        oneOf:
+        - type: string
+        - type: number
+
+  # Test output checks
+  test-checks-output:
+    type: object
+    propertiies:
+      name:
+        type: string
+      checks:
+        type: array
+        items:
+          anyOf:
+          - $ref: '#/definitions/test-checks-output-exists'
+          - $ref: '#/definitions/test-checks-output-linecount'
+    required:
+    - name
+
+  # A test output check (for a file existing or not existing)
+  test-checks-output-exists:
+    type: object
+    additionalProperties: false
+    propertiies:
+      exists:
+        type: boolean
+    required:
+    - exists
+
+  # A test output check (for a file length)
+  test-checks-output-linecount:
+    type: object
+    additionalProperties: false
+    propertiies:
+      lineCount:
+        type: integer
+        minimum: 0
+    required:
+    - lineCount
