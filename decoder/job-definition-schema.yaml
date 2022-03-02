@@ -318,6 +318,7 @@ definitions:
         oneOf:
         - type: string
         - type: number
+        - type: boolean
 
   # Test output checks
   test-checks-output:
