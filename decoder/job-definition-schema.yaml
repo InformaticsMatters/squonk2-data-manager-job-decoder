@@ -143,6 +143,7 @@ definitions:
     - name
     - tag
     - project-directory
+    - working-directory
 
   # A kubernetes CPU (cores) declaration.
   # Here we only accept numbers in the range 1 to 32.

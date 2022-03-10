@@ -19,7 +19,8 @@ _MINIMAL: Dict[str, Any] = {
                           'name': 'test',
                           'image': {'name': 'blob',
                                     'tag': '1.0.0',
-                                    'project-directory': '/data'},
+                                    'project-directory': '/data',
+                                    'working-directory': '/data'},
                           'command': 'sys.exit(1)'}}}
 
 
