@@ -146,7 +146,7 @@ def test_validate_two_basic_tests():
         {'basic-1': {'run-level': 1,
                      'ignore': None},
          'basic-2': {'run-level': 100,
-                     'inputs': {'file-1': 'blob.txt'},
+                     'inputs': {'files': ['blob-1.txt', 'blob-2.txt']},
                      'options': {'param-1': 32,
                                  'param-2': 'a'},
                      'checks': {'exitCode': 0,

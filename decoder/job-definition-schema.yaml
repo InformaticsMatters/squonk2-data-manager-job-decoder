@@ -302,13 +302,17 @@ definitions:
         required:
         - exitCode
 
-  # A test input
+  # A test input, a string or array of strings
   test-input:
     type: object
     additionalProperties: false
     patternProperties:
       '^[a-zA-Z]{1}[a-zA-Z0-9_-]{0,31}$':
-        type: string
+        oneOf:
+        - type: string
+        - type: array
+          items:
+            type: string
 
   # A test option
   test-option:
