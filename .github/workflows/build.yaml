@@ -17,7 +17,11 @@ name: build
 # Environment         (none)
 
 on:
-- push
+  push:
+    branches:
+    - '**'
+    tags-ignore:
+    - '**'
 
 jobs:
   build:
