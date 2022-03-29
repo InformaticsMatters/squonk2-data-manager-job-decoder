@@ -284,6 +284,9 @@ definitions:
         type: integer
         minimum: 1
         maximum: 100
+      timeout-minutes:
+        type: integer
+        minimum: 1
       ignore:
         type: 'null'
       inputs:
