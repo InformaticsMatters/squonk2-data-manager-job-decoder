@@ -17,32 +17,34 @@ from . import decode_jinja2_3_0
 
 # The (built-in) schemas...
 # from the same directory as us.
-_JD_SCHEMA_FILE: str = os.path.join(os.path.dirname(__file__),
-                                    'job-definition-schema.yaml')
-_MANIFEST_SCHEMA_FILE: str = os.path.join(os.path.dirname(__file__),
-                                          'manifest-schema.yaml')
+_JD_SCHEMA_FILE: str = os.path.join(
+    os.path.dirname(__file__), "job-definition-schema.yaml"
+)
+_MANIFEST_SCHEMA_FILE: str = os.path.join(
+    os.path.dirname(__file__), "manifest-schema.yaml"
+)
 
 # Load the JD schema YAML file now.
 # This must work as the file is installed along with this module.
 assert os.path.isfile(_JD_SCHEMA_FILE)
-with open(_JD_SCHEMA_FILE, 'r', encoding='utf8') as schema_file:
-    _JOB_DEFINITION_SCHEMA: Dict[str, Any] =\
-        yaml.load(schema_file, Loader=yaml.FullLoader)
+with open(_JD_SCHEMA_FILE, "r", encoding="utf8") as schema_file:
+    _JOB_DEFINITION_SCHEMA: Dict[str, Any] = yaml.load(
+        schema_file, Loader=yaml.FullLoader
+    )
 assert _JOB_DEFINITION_SCHEMA
 
 # Load the Manifest schema YAML file now.
 # This must work as the file is installed along with this module.
 assert os.path.isfile(_MANIFEST_SCHEMA_FILE)
-with open(_MANIFEST_SCHEMA_FILE, 'r', encoding='utf8') as schema_file:
-    _MANIFEST_SCHEMA: Dict[str, Any] =\
-        yaml.load(schema_file, Loader=yaml.FullLoader)
+with open(_MANIFEST_SCHEMA_FILE, "r", encoding="utf8") as schema_file:
+    _MANIFEST_SCHEMA: Dict[str, Any] = yaml.load(schema_file, Loader=yaml.FullLoader)
 assert _MANIFEST_SCHEMA
 
 
 class TextEncoding(enum.Enum):
-    """A general text encoding format, used initially for Job text fields.
-    """
-    JINJA2_3_0 = 1      # Encoding that complies with Jinja2 v3.0.x
+    """A general text encoding format, used initially for Job text fields."""
+
+    JINJA2_3_0 = 1  # Encoding that complies with Jinja2 v3.0.x
 
 
 def validate_manifest_schema(manifest: Dict[str, Any]) -> Optional[str]:
@@ -79,10 +81,12 @@ def validate_job_schema(job_definition: Dict[str, Any]) -> Optional[str]:
     return None
 
 
-def decode(template_text: str,
-           variable_map: Optional[Dict[str, str]],
-           subject: str,
-           template_engine: TextEncoding) -> Tuple[str, bool]:
+def decode(
+    template_text: str,
+    variable_map: Optional[Dict[str, str]],
+    subject: str,
+    template_engine: TextEncoding,
+) -> Tuple[str, bool]:
     """Given some text and a 'variable map' (a dictionary of keys and values)
     this returns the decoded text (using the named engine) as a string
     and a boolean set to True. On failure the boolean is False and the returned
@@ -101,8 +105,8 @@ def decode(template_text: str,
     if variable_map is None:
         return template_text, True
 
-    if template_engine.name.lower() == 'jinja2_3_0':
+    if template_engine.name.lower() == "jinja2_3_0":
         return decode_jinja2_3_0.decode(template_text, variable_map, subject)
 
     # Unsupported engine if we get here!
-    return f'Unsupported template engine: {template_engine}', False
+    return f"Unsupported template engine: {template_engine}", False

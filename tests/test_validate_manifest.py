@@ -3,6 +3,7 @@ from typing import Any, Dict
 from copy import deepcopy
 
 import pytest
+
 pytestmark = pytest.mark.unit
 
 from decoder import decoder
@@ -10,10 +11,10 @@ from decoder import decoder
 # A minimal Job Definition.
 # Tests can use this and adjust accordingly.
 _MINIMAL: Dict[str, Any] = {
-        'kind': 'DataManagerManifest',
-        'kind-version': '2021.1',
-        'job-definition-files': ['blob.yaml',
-                                 'blob.yml']}
+    "kind": "DataManagerManifest",
+    "kind-version": "2021.1",
+    "job-definition-files": ["blob.yaml", "blob.yml"],
+}
 
 
 def test_validate_minimal():

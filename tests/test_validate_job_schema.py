@@ -3,6 +3,7 @@ from typing import Any, Dict
 from copy import deepcopy
 
 import pytest
+
 pytestmark = pytest.mark.unit
 
 from decoder import decoder
@@ -10,18 +11,25 @@ from decoder import decoder
 # A minimal Job Definition.
 # Tests can use this and adjust accordingly.
 _MINIMAL: Dict[str, Any] = {
-        'kind': 'DataManagerJobDefinition',
-        'kind-version': '2021.1',
-        'collection': 'test',
-        'repository-url': 'https://example.com',
-        'repository-tag': '1.0.0',
-        'jobs': {'demo': {'version': '1.0.0',
-                          'name': 'test',
-                          'image': {'name': 'blob',
-                                    'tag': '1.0.0',
-                                    'project-directory': '/data',
-                                    'working-directory': '/data'},
-                          'command': 'sys.exit(1)'}}}
+    "kind": "DataManagerJobDefinition",
+    "kind-version": "2021.1",
+    "collection": "test",
+    "repository-url": "https://example.com",
+    "repository-tag": "1.0.0",
+    "jobs": {
+        "demo": {
+            "version": "1.0.0",
+            "name": "test",
+            "image": {
+                "name": "blob",
+                "tag": "1.0.0",
+                "project-directory": "/data",
+                "working-directory": "/data",
+            },
+            "command": "sys.exit(1)",
+        }
+    },
+}
 
 
 def test_validate_minimal():
@@ -37,12 +45,10 @@ def test_validate_minimal():
 def test_validate_image_env_from_api_token():
     # Arrange
     text: Dict[str, Any] = deepcopy(_MINIMAL)
-    demo_job: Dict[str, Any] = text['jobs']['demo']
-    demo_job['image']['environment'] = \
-        [{'name': 'ENV_VAR',
-          'value-from': {
-              'api-token': {
-                  'roles': ['abc']}}}]
+    demo_job: Dict[str, Any] = text["jobs"]["demo"]
+    demo_job["image"]["environment"] = [
+        {"name": "ENV_VAR", "value-from": {"api-token": {"roles": ["abc"]}}}
+    ]
 
     # Act
     error = decoder.validate_job_schema(text)
@@ -54,12 +60,10 @@ def test_validate_image_env_from_api_token():
 def test_validate_image_env_from_constant():
     # Arrange
     text: Dict[str, Any] = deepcopy(_MINIMAL)
-    demo_job: Dict[str, Any] = text['jobs']['demo']
-    demo_job['image']['environment'] = \
-        [{'name': 'ENV_VAR',
-          'value-from': {
-              'constant': {
-                  'value': '123'}}}]
+    demo_job: Dict[str, Any] = text["jobs"]["demo"]
+    demo_job["image"]["environment"] = [
+        {"name": "ENV_VAR", "value-from": {"constant": {"value": "123"}}}
+    ]
 
     # Act
     error = decoder.validate_job_schema(text)
@@ -71,13 +75,13 @@ def test_validate_image_env_from_constant():
 def test_validate_image_env_from_secret():
     # Arrange
     text: Dict[str, Any] = deepcopy(_MINIMAL)
-    demo_job: Dict[str, Any] = text['jobs']['demo']
-    demo_job['image']['environment'] = \
-        [{'name': 'ENV_VAR',
-          'value-from': {
-              'secret': {
-                  'name': 'secret-a',
-                  'key': 'secret'}}}]
+    demo_job: Dict[str, Any] = text["jobs"]["demo"]
+    demo_job["image"]["environment"] = [
+        {
+            "name": "ENV_VAR",
+            "value-from": {"secret": {"name": "secret-a", "key": "secret"}},
+        }
+    ]
 
     # Act
     error = decoder.validate_job_schema(text)
@@ -89,8 +93,8 @@ def test_validate_image_env_from_secret():
 def test_validate_image_memory_32gi():
     # Arrange
     text: Dict[str, Any] = deepcopy(_MINIMAL)
-    demo_job: Dict[str, Any] = text['jobs']['demo']
-    demo_job['image']['memory'] = '32Gi'
+    demo_job: Dict[str, Any] = text["jobs"]["demo"]
+    demo_job["image"]["memory"] = "32Gi"
 
     # Act
     error = decoder.validate_job_schema(text)
@@ -102,8 +106,8 @@ def test_validate_image_memory_32gi():
 def test_validate_image_memory_100mi():
     # Arrange
     text: Dict[str, Any] = deepcopy(_MINIMAL)
-    demo_job: Dict[str, Any] = text['jobs']['demo']
-    demo_job['image']['memory'] = '100Mi'
+    demo_job: Dict[str, Any] = text["jobs"]["demo"]
+    demo_job["image"]["memory"] = "100Mi"
 
     # Act
     error = decoder.validate_job_schema(text)
@@ -115,8 +119,8 @@ def test_validate_image_memory_100mi():
 def test_validate_image_cores_1():
     # Arrange
     text: Dict[str, Any] = deepcopy(_MINIMAL)
-    demo_job: Dict[str, Any] = text['jobs']['demo']
-    demo_job['image']['cores'] = 1
+    demo_job: Dict[str, Any] = text["jobs"]["demo"]
+    demo_job["image"]["cores"] = 1
 
     # Act
     error = decoder.validate_job_schema(text)
@@ -128,8 +132,8 @@ def test_validate_image_cores_1():
 def test_validate_image_cores_32():
     # Arrange
     text: Dict[str, Any] = deepcopy(_MINIMAL)
-    demo_job: Dict[str, Any] = text['jobs']['demo']
-    demo_job['image']['cores'] = 32
+    demo_job: Dict[str, Any] = text["jobs"]["demo"]
+    demo_job["image"]["cores"] = 32
 
     # Act
     error = decoder.validate_job_schema(text)
@@ -141,19 +145,25 @@ def test_validate_image_cores_32():
 def test_validate_two_basic_tests():
     # Arrange
     text: Dict[str, Any] = deepcopy(_MINIMAL)
-    demo_job: Dict[str, Any] = text['jobs']['demo']
-    demo_job['tests'] =\
-        {'basic-1': {'run-level': 1,
-                     'ignore': None},
-         'basic-2': {'run-level': 100,
-                     'timeout-minutes': 30,
-                     'inputs': {'files': ['blob-1.txt', 'blob-2.txt']},
-                     'options': {'param-1': 32,
-                                 'param-2': 'a'},
-                     'checks': {'exitCode': 0,
-                                'outputs': [{'name': 'blob.txt',
-                                             'checks': [{'exists': True},
-                                                        {'lineCount': 100}]}]}}}
+    demo_job: Dict[str, Any] = text["jobs"]["demo"]
+    demo_job["tests"] = {
+        "basic-1": {"run-level": 1, "ignore": None},
+        "basic-2": {
+            "run-level": 100,
+            "timeout-minutes": 30,
+            "inputs": {"files": ["blob-1.txt", "blob-2.txt"]},
+            "options": {"param-1": 32, "param-2": "a"},
+            "checks": {
+                "exitCode": 0,
+                "outputs": [
+                    {
+                        "name": "blob.txt",
+                        "checks": [{"exists": True}, {"lineCount": 100}],
+                    }
+                ],
+            },
+        },
+    }
 
     # Act
     error = decoder.validate_job_schema(text)
