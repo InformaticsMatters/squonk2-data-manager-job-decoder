@@ -331,7 +331,7 @@ definitions:
   # Test output checks
   test-checks-output:
     type: object
-    propertiies:
+    properties:
       name:
         type: string
       checks:
@@ -347,7 +347,7 @@ definitions:
   test-checks-output-exists:
     type: object
     additionalProperties: false
-    propertiies:
+    properties:
       exists:
         type: boolean
     required:
@@ -357,7 +357,7 @@ definitions:
   test-checks-output-linecount:
     type: object
     additionalProperties: false
-    propertiies:
+    properties:
       lineCount:
         type: integer
         minimum: 0
