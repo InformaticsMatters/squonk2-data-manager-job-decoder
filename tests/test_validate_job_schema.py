@@ -153,6 +153,7 @@ def test_validate_two_basic_tests():
             "timeout-minutes": 30,
             "inputs": {"files": ["blob-1.txt", "blob-2.txt"]},
             "options": {"param-1": 32, "param-2": "a"},
+            "environment": ['ENV_1', 'ENV_2'],
             "checks": {
                 "exitCode": 0,
                 "outputs": [

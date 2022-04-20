@@ -275,7 +275,14 @@ definitions:
         $ref: '#/definitions/test'
     minProperties: 1
 
-  # An individual Test
+  # An individual Test.
+  # The user defines inputs and options
+  # along with environment variables (that have to exist)
+  # and will be injected into the running Job. For each
+  # environment variable defined jote will ensure that it exists.
+  # The user can also define a series of 'checks'
+  # that are used to check files expected to be created
+  # by the job under test.
   test:
     type: object
     additionalProperties: false
@@ -293,6 +300,10 @@ definitions:
         $ref: '#/definitions/test-input'
       options:
         $ref: '#/definitions/test-option'
+      environment:
+        type: array
+        items:
+          $ref: '#/definitions/env-var-name'
       checks:
         type: object
         properties:
