@@ -131,6 +131,8 @@ definitions:
         - simple
         - nextflow
         default: simple
+      fix-permissions:
+        type: boolean
       pull-secret:
         $ref: '#/definitions/rfc-1035-name'
       memory:

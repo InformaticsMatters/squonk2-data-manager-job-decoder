@@ -25,6 +25,7 @@ _MINIMAL: Dict[str, Any] = {
                 "tag": "1.0.0",
                 "project-directory": "/data",
                 "working-directory": "/data",
+                "fix-permissions": True,
             },
             "command": "sys.exit(1)",
         }
