@@ -14,8 +14,6 @@ _MINIMAL: Dict[str, Any] = {
     "kind": "DataManagerJobDefinition",
     "kind-version": "2021.1",
     "collection": "test",
-    "repository-url": "https://example.com",
-    "repository-tag": "1.0.0",
     "jobs": {
         "demo": {
             "version": "1.0.0",

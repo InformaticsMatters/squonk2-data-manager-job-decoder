@@ -28,22 +28,12 @@ properties:
     minLength: 1
     maxLength: 80
     pattern: '^[a-z]{1}[a-z0-9-]*$'
-  repository-url:
-    type: string
-    maxlength: 2048
-    format: uri
-  repository-tag:
-    type: string
-    minLength: 1
-    maxLength: 24
   jobs:
     $ref: '#/definitions/job-identity'
 required:
 - kind
 - kind-version
 - collection
-- repository-url
-- repository-tag
 - jobs
 
 # Sub-object definitions ------------------------------------------------------
