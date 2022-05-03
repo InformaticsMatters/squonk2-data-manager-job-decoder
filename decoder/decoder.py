@@ -81,6 +81,60 @@ def validate_job_schema(job_definition: Dict[str, Any]) -> Optional[str]:
     return None
 
 
+def get_job_doc_url(job: str, job_definition: Dict[str, Any], manifest_url: str) -> str:
+    """Returns the Job's documentation URL for a specific Job using the JOb's
+    'doc-url' and manifest URL. The job manifest is expected to
+    have been validated, and we expect to have been given one job structure
+    from the job's definition, not the whole job definition file.
+    """
+    assert job
+    assert isinstance(job_definition, dict)
+    assert manifest_url
+
+    # The response depends on the value of 'doc-url'.
+    # 1. If there is no doc-url the URL is auto-generated
+    #    from the manifest URL, job collection and job name.
+    # 2. If the doc-url begins 'https://' then this is taken as the doc-url
+    # 3. If the doc-url does not begin https:// then is
+    #    assumed to be relative to the manifest directory URL
+
+    # A typical manifest URl will look like this...
+    #
+    #   https://raw.githubusercontent.com/InformaticsMatters/
+    #       virtual-screening/main/data-manager/manifest-virtual-screening.yaml
+    #
+    # The base for an auto-generated doc-url (if we need it)
+    # will be: -
+    #
+    #   https://raw.githubusercontent.com/InformaticsMatters/
+    #       virtual-screening/main/data-manager/docs
+
+    collection: str = job_definition["collection"]
+    doc_url: Optional[str] = job_definition.get("doc-url", None)
+
+    # If doc-url starts 'https://' just return it
+    if doc_url and doc_url.startswith("https://"):
+        return doc_url
+
+    # If the doc-url is set (it's not https://)
+    # so we assume is simply relative to the 'docs' directory
+    # where the manifest is found.
+    manifest_directory_url, _ = os.path.split(manifest_url)
+    if doc_url and not doc_url.startswith("https://"):
+        # doc-url defined but does not start 'https://'
+        doc_url = f"{manifest_directory_url}/docs/{doc_url}"
+    elif doc_url is None:
+        # No doc-url.
+        # The
+        doc_url = f"{manifest_directory_url}/docs/{collection}/{job}.md"
+    else:
+        # How did we get here?
+        assert False
+
+    assert doc_url
+    return doc_url
+
+
 def decode(
     template_text: str,
     variable_map: Optional[Dict[str, str]],
