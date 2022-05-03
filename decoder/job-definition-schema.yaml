@@ -80,6 +80,7 @@ definitions:
         type: string
       doc-url:
         type: string
+        pattern: '^(https|[a-z]).+$'
       keywords:
         type: array
         items:
