@@ -81,12 +81,15 @@ def validate_job_schema(job_definition: Dict[str, Any]) -> Optional[str]:
     return None
 
 
-def get_job_doc_url(job: str, job_definition: Dict[str, Any], manifest_url: str) -> str:
+def get_job_doc_url(
+    collection: str, job: str, job_definition: Dict[str, Any], manifest_url: str
+) -> str:
     """Returns the Job's documentation URL for a specific Job using the JOb's
     'doc-url' and manifest URL. The job manifest is expected to
     have been validated, and we expect to have been given one job structure
     from the job's definition, not the whole job definition file.
     """
+    assert collection
     assert job
     assert isinstance(job_definition, dict)
     assert manifest_url
@@ -109,7 +112,6 @@ def get_job_doc_url(job: str, job_definition: Dict[str, Any], manifest_url: str)
     #   https://raw.githubusercontent.com/InformaticsMatters/
     #       virtual-screening/main/data-manager/docs
 
-    collection: str = job_definition["collection"]
     doc_url: Optional[str] = job_definition.get("doc-url", None)
 
     # If doc-url starts 'https://' just return it

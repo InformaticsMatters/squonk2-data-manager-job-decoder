@@ -10,9 +10,9 @@ from decoder import decoder
 
 def test_get_job_doc_url_with_fq_doc_url():
     # Arrange
+    collection: str = "collection-x"
     job: str = "job-x"
     job_definition: Dict = {
-        "collection": "collection-x",
         "doc-url": "https://example.com/docs/doc.md",
     }
     manifest_url: str = (
@@ -23,7 +23,7 @@ def test_get_job_doc_url_with_fq_doc_url():
     expected_doc_url: str = "https://example.com/docs/doc.md"
 
     # Act
-    doc_url = decoder.get_job_doc_url(job, job_definition, manifest_url)
+    doc_url = decoder.get_job_doc_url(collection, job, job_definition, manifest_url)
 
     # Assert
     assert doc_url
@@ -32,8 +32,9 @@ def test_get_job_doc_url_with_fq_doc_url():
 
 def test_get_job_doc_url_with_partial_doc_url():
     # Arrange
+    collection: str = "collection-x"
     job: str = "job-x"
-    job_definition: Dict = {"collection": "collection-x", "doc-url": "special/doc.md"}
+    job_definition: Dict = {"doc-url": "special/doc.md"}
     manifest_url: str = (
         "https://raw.githubusercontent.com/"
         "InformaticsMatters/virtual-screening/main/data-manager/"
@@ -46,7 +47,7 @@ def test_get_job_doc_url_with_partial_doc_url():
     )
 
     # Act
-    doc_url = decoder.get_job_doc_url(job, job_definition, manifest_url)
+    doc_url = decoder.get_job_doc_url(collection, job, job_definition, manifest_url)
 
     # Assert
     assert doc_url
@@ -55,8 +56,9 @@ def test_get_job_doc_url_with_partial_doc_url():
 
 def test_get_job_doc_url_with_no_doc_url():
     # Arrange
+    collection: str = "collection-x"
     job: str = "job-x"
-    job_definition: Dict = {"collection": "collection-x"}
+    job_definition: Dict = {}
     manifest_url: str = (
         "https://raw.githubusercontent.com/"
         "InformaticsMatters/virtual-screening/main/data-manager/"
@@ -69,7 +71,7 @@ def test_get_job_doc_url_with_no_doc_url():
     )
 
     # Act
-    doc_url = decoder.get_job_doc_url(job, job_definition, manifest_url)
+    doc_url = decoder.get_job_doc_url(collection, job, job_definition, manifest_url)
 
     # Assert
     assert doc_url
