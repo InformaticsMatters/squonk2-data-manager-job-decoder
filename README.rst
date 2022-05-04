@@ -40,14 +40,19 @@ formed from the definition YAML file) with::
     >>> error: Optional[str] = decoder.validate_manifest_schema(manifest)
     >>> error: Optional[str] = decoder.validate_job_schema(job_definition)
 
-And run the decoder with:
+And you can decode encoded fields within the job definition.
+Here we're decoding the job's 'command' using a map of variables and their
+values::
 
-    >>> decoded, success = decoder.decode(text, variables, 'command', decoder.TextEncoding.JINJA2_3_0)
+    >>> decoded, success = decoder.decode(definition['command'],
+                                          variables,
+                                          'command',
+                                          decoder.TextEncoding.JINJA2_3_0)
 
-A method exists to generate a Data Manger Job documentation URL
+A method also exists to generate a Data Manger Job documentation URL
 for the supported repository types. For example, to get the
-auto-generated documentation URL for a GitHub repository-based
-job definition you can do this::
+auto-generated documentation URL for a job definition hosted in a GitHub
+repository you can do this::
 
     >>> doc_url: str = decoder.get_job_doc_url("github",
                                                collection
