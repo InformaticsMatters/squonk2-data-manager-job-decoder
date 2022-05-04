@@ -68,9 +68,11 @@ definitions:
         maxLength: 24
       category:
         type: string
+      # The doc-url must either start 'https', or with a letter.
+      # It cannot end with '/'.
       doc-url:
         type: string
-        pattern: '^(https|[a-z]).+$'
+        pattern: '^(https|[a-z]).+(?<!/)$'
       keywords:
         type: array
         items:
