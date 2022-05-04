@@ -43,8 +43,8 @@ def test_get_github_job_doc_url_with_partial_doc_url():
         "manifest-virtual-screening.yaml"
     )
     expected_doc_url: str = (
-        "https://raw.githubusercontent.com/"
-        "InformaticsMatters/virtual-screening/main/data-manager/docs/"
+        "https://github.com/"
+        "InformaticsMatters/virtual-screening/blob/main/data-manager/docs/"
         "special/doc.md"
     )
 
@@ -65,12 +65,12 @@ def test_get_github_job_doc_url_with_no_doc_url():
     job_definition: Dict = {}
     manifest_url: str = (
         "https://raw.githubusercontent.com/"
-        "InformaticsMatters/virtual-screening/main/data-manager/"
+        "InformaticsMatters/virtual-screening/1.0.1/data-manager/"
         "manifest-virtual-screening.yaml"
     )
     expected_doc_url: str = (
-        "https://raw.githubusercontent.com/"
-        "InformaticsMatters/virtual-screening/main/data-manager/docs/"
+        "https://github.com/"
+        "InformaticsMatters/virtual-screening/blob/1.0.1/data-manager/docs/"
         "collection-x/job-x.md"
     )
 

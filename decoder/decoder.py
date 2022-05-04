@@ -6,7 +6,8 @@ given a 'template' string and a 'dictionary' of parameters and values.
 """
 import enum
 import os
-from typing import Any, Dict, List, Optional, Tuple
+import re
+from typing import Any, Dict, List, Optional, Pattern, Tuple
 
 import jsonschema
 import yaml
@@ -43,6 +44,8 @@ assert _MANIFEST_SCHEMA
 REPO_TYPE_GITHUB: str = "github"
 REPO_TYPE_GITLAB: str = "gitlab"
 _REPO_TYPES: List[str] = [REPO_TYPE_GITHUB, REPO_TYPE_GITLAB]
+
+_GITHUB_REF_RE: Pattern[str] = re.compile(r"/([^/]+)/data-manager/")
 
 
 class TextEncoding(enum.Enum):
@@ -93,7 +96,7 @@ def get_supported_repository_types() -> List[str]:
 def _get_github_job_doc_url(
     manifest_url: str, collection: str, job_id: str, doc_url: Optional[str]
 ) -> str:
-    """Returns the path to the doc for a GitHub public reference,
+    """Returns the path to the 'pretty' doc for a GitHub public reference,
     based on the manifest URL, collection and Job ID.
     """
     manifest_directory_url, _ = os.path.split(manifest_url)
@@ -109,6 +112,21 @@ def _get_github_job_doc_url(
     else:
         # How did we get here?
         assert False
+
+    # The doc-url here is to the 'raw' file.
+    # Adjust it so that it should refer to the 'pretty' file.
+    #
+    # We replace:
+    #
+    # - raw.githubusercontent.com with github.com
+    # - The field prior to 'data-manager' (the branch/tag) with '/blob/(field)
+    doc_url = doc_url.replace("raw.githubusercontent.com", "github.com", 1)
+    ref_match = _GITHUB_REF_RE.search(doc_url)
+    assert ref_match
+    original_ref = ref_match[0]
+    ref = ref_match[1]
+    new_ref: str = f"/blob/{ref}/data-manager/"
+    doc_url = doc_url.replace(original_ref, new_ref, 1)
 
     return doc_url
 
