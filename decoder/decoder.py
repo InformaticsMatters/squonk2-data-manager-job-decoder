@@ -6,7 +6,7 @@ given a 'template' string and a 'dictionary' of parameters and values.
 """
 import enum
 import os
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import jsonschema
 import yaml
@@ -39,6 +39,10 @@ assert os.path.isfile(_MANIFEST_SCHEMA_FILE)
 with open(_MANIFEST_SCHEMA_FILE, "r", encoding="utf8") as schema_file:
     _MANIFEST_SCHEMA: Dict[str, Any] = yaml.load(schema_file, Loader=yaml.FullLoader)
 assert _MANIFEST_SCHEMA
+
+REPO_TYPE_GITHUB: str = "github"
+REPO_TYPE_GITLAB: str = "gitlab"
+_REPO_TYPES: List[str] = [REPO_TYPE_GITHUB, REPO_TYPE_GITLAB]
 
 
 class TextEncoding(enum.Enum):
@@ -81,14 +85,73 @@ def validate_job_schema(job_definition: Dict[str, Any]) -> Optional[str]:
     return None
 
 
+def get_supported_repository_types() -> List[str]:
+    """Returns a copy of the supported Git repository types."""
+    return _REPO_TYPES[:]
+
+
+def _get_github_job_doc_url(
+    manifest_url: str, collection: str, job_id: str, doc_url: Optional[str]
+) -> str:
+    """Returns the path to the doc for a GitHub public reference,
+    based on the manifest URL, collection and Job ID.
+    """
+    manifest_directory_url, _ = os.path.split(manifest_url)
+    if doc_url and not doc_url.startswith("https://"):
+        # doc-url defined but does not start 'https://'
+        # the doc_url is a path within the docs directory
+        doc_url = f"{manifest_directory_url}/docs/{doc_url}"
+    elif doc_url is None:
+        # No doc-url.
+        # The doc is expected to be in 'docs',
+        # as '{job}.md' in the {collection} directory.
+        doc_url = f"{manifest_directory_url}/docs/{collection}/{job_id}.md"
+    else:
+        # How did we get here?
+        assert False
+
+    return doc_url
+
+
+def _get_gitlab_job_doc_url(
+    manifest_url: str, collection: str, job_id: str, doc_url: Optional[str]
+) -> str:
+    """Returns the path to the doc for a GitLab reference,
+    based on the manifest URL, collection and Job ID.
+    """
+    manifest_directory_url, _ = manifest_url.split("%2f")
+    if doc_url and not doc_url.startswith("https://"):
+        # doc-url defined but does not start 'https://'
+        # the doc_url is a path within the docs directory
+        doc_url = doc_url.replace("/", "%2f")
+        doc_url = f"{manifest_directory_url}%2fdocs%2f{doc_url}/raw"
+    elif doc_url is None:
+        # No doc-url.
+        # The doc is expected to be in 'docs',
+        # as '{job}.md' in the {collection} directory.
+        doc_url = f"{manifest_directory_url}%2fdocs%2f{collection}%2f{job_id}.md/raw"
+    else:
+        # How did we get here?
+        assert False
+
+    return doc_url
+
+
 def get_job_doc_url(
-    collection: str, job: str, job_definition: Dict[str, Any], manifest_url: str
+    repo_type: str,
+    collection: str,
+    job: str,
+    job_definition: Dict[str, Any],
+    manifest_url: str,
 ) -> str:
     """Returns the Job's documentation URL for a specific Job using the JOb's
     'doc-url' and manifest URL. The job manifest is expected to
     have been validated, and we expect to have been given one job structure
     from the job's definition, not the whole job definition file.
+
+    repo_type must be one of the supported types.
     """
+    assert repo_type in _REPO_TYPES
     assert collection
     assert job
     assert isinstance(job_definition, dict)
@@ -101,12 +164,12 @@ def get_job_doc_url(
     # 3. If the doc-url does not begin https:// then is
     #    assumed to be relative to the manifest directory URL
 
-    # A typical manifest URl will look like this...
+    # A typical GitHub manifest URL will look like this...
     #
     #   https://raw.githubusercontent.com/InformaticsMatters/
     #       virtual-screening/main/data-manager/manifest-virtual-screening.yaml
     #
-    # The base for an auto-generated doc-url (if we need it)
+    # And, in this case the base for an auto-generated doc-url (if we need it)
     # will be: -
     #
     #   https://raw.githubusercontent.com/InformaticsMatters/
@@ -117,21 +180,14 @@ def get_job_doc_url(
     # If doc-url starts 'https://' just return it
     if doc_url and doc_url.startswith("https://"):
         return doc_url
+    if doc_url is not None:
+        assert not doc_url.startswith("/")
+        assert not doc_url.endswith("/")
 
-    # If the doc-url is set (it's not https://)
-    # so we assume is simply relative to the 'docs' directory
-    # where the manifest is found.
-    manifest_directory_url, _ = os.path.split(manifest_url)
-    if doc_url and not doc_url.startswith("https://"):
-        # doc-url defined but does not start 'https://'
-        doc_url = f"{manifest_directory_url}/docs/{doc_url}"
-    elif doc_url is None:
-        # No doc-url.
-        # The
-        doc_url = f"{manifest_directory_url}/docs/{collection}/{job}.md"
-    else:
-        # How did we get here?
-        assert False
+    if repo_type == REPO_TYPE_GITHUB:
+        doc_url = _get_github_job_doc_url(manifest_url, collection, job, doc_url)
+    elif repo_type == REPO_TYPE_GITLAB:
+        doc_url = _get_gitlab_job_doc_url(manifest_url, collection, job, doc_url)
 
     assert doc_url
     return doc_url

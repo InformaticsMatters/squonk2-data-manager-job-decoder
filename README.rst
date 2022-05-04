@@ -34,15 +34,28 @@ there::
     pip install im-data-manager-job-decoder
 
 Once installed you can validate the definition (expected to be a dictionary
-formed from the definition YAML file) with:
+formed from the definition YAML file) with::
 
->>> from decoder import decoder
->>> error = decoder.validate_manifest_schema(manifest)
->>> error = decoder.validate_job_schema(job_definition)
+    >>> from decoder import decoder
+    >>> error: Optional[str] = decoder.validate_manifest_schema(manifest)
+    >>> error: Optional[str] = decoder.validate_job_schema(job_definition)
 
 And run the decoder with:
 
->>> decoded, success = decoder.decode(text, variables, 'command', decoder.TextEncoding.JINJA2_3_0)
+    >>> decoded, success = decoder.decode(text, variables, 'command', decoder.TextEncoding.JINJA2_3_0)
+
+A method exists to generate a Data Manger Job documentation URL
+for the supported repository types. For example, to get the
+auto-generated documentation URL for a GitHub repository-based
+job definition you can do this::
+
+    >>> doc_url: str = decoder.get_job_doc_url("github",
+                                               collection
+                                               job_id,
+                                               job_definition,
+                                               manifest_url)
+
+We support ``github`` and ``gitlab`` as repository types.
 
 .. _PyPI: https://pypi.org/project/im-data-manager-job-decoder
 
