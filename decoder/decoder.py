@@ -211,6 +211,20 @@ def get_job_doc_url(
     return doc_url
 
 
+def get_pull_secret_names(job_definition: Dict[str, Any]) -> Set[str]:
+    """ "Given a Job definition this function returns the unique list of the
+    pull-secrets declared.
+    """
+    names: Set[str] = set()
+
+    # Check the environment block...
+    pull_secret: Optional[str] = job_definition.get("image", {}).get("pull-secret")
+    if pull_secret:
+        names.add(pull_secret)
+
+    return names
+
+
 def get_asset_names(job_definition: Dict[str, Any]) -> Set[str]:
     """ "Given a Job definition this function returns the unique list of all the
     asset names declared. Asset names can be used in image environment
