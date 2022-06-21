@@ -7,7 +7,7 @@ given a 'template' string and a 'dictionary' of parameters and values.
 import enum
 import os
 import re
-from typing import Any, Dict, List, Optional, Pattern, Tuple
+from typing import Any, Dict, List, Optional, Pattern, Set, Tuple
 
 import jsonschema
 import yaml
@@ -209,6 +209,29 @@ def get_job_doc_url(
 
     assert doc_url
     return doc_url
+
+
+def get_asset_names(job_definition: Dict[str, Any]) -> Set[str]:
+    """ "Given a Job definition this function returns the unique list of all the
+    asset names declared. Asset names can be used in image environment
+    variables and files.
+    """
+    asset_names: Set[str] = set()
+
+    # Check the environment block...
+    environment: List[Dict[str, Any]] = job_definition.get("image", {}).get(
+        "environment", []
+    )
+    for env in environment:
+        if "account-server-asset" in env["value-from"]:
+            asset_names.add(env["value-from"]["account-server-asset"]["name"])
+    # Check the file block...
+    file_block: List[Dict[str, Any]] = job_definition.get("image", {}).get("file", [])
+    for item in file_block:
+        if "account-server-asset" in item["content-from"]:
+            asset_names.add(item["content-from"]["account-server-asset"]["name"])
+
+    return asset_names
 
 
 def decode(
