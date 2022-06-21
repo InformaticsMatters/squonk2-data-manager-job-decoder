@@ -89,6 +89,42 @@ def test_validate_image_env_from_secret():
     assert error is None
 
 
+def test_validate_image_env_from_account_server_asset():
+    # Arrange
+    text: Dict[str, Any] = deepcopy(_MINIMAL)
+    demo_job: Dict[str, Any] = text["jobs"]["demo"]
+    demo_job["image"]["environment"] = [
+        {
+            "name": "ENV_VAR",
+            "value-from": {"account-server-asset": {"name": "asset-a"}},
+        }
+    ]
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
+def test_validate_image_file_from_account_server_asset():
+    # Arrange
+    text: Dict[str, Any] = deepcopy(_MINIMAL)
+    demo_job: Dict[str, Any] = text["jobs"]["demo"]
+    demo_job["image"]["file"] = [
+        {
+            "name": "/usr/local/licence.txt",
+            "content-from": {"account-server-asset": {"name": "asset-a"}},
+        }
+    ]
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
 def test_validate_image_memory_32gi():
     # Arrange
     text: Dict[str, Any] = deepcopy(_MINIMAL)
