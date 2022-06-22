@@ -8,7 +8,7 @@ pytestmark = pytest.mark.unit
 from decoder import decoder
 
 
-def test_get_asset_names():
+def test_get_file_assets():
     # Arrange
     job_definition: Dict = {
         "image": {
@@ -32,9 +32,16 @@ def test_get_asset_names():
     }
 
     # Act
-    asset_names = decoder.get_asset_names(job_definition)
+    file_assets = decoder.get_file_assets(job_definition)
 
     # Assert
-    assert len(asset_names) == 2
-    assert "asset-a" in asset_names
-    assert "asset-b" in asset_names
+    assert len(file_assets) == 2
+    print(file_assets)
+    for file_asset in file_assets:
+        if file_asset["image-file"] == "/tmp/blob-1.txt":
+            assert file_asset["asset"] == "asset-a"
+        elif file_asset["image-file"] == "/tmp/blob-2.txt":
+            assert file_asset["asset"] == "asset-b"
+        else:
+            # How did we get here?
+            assert False

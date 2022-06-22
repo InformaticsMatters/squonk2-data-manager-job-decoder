@@ -212,7 +212,7 @@ def get_job_doc_url(
 
 
 def get_pull_secret_names(job_definition: Dict[str, Any]) -> Set[str]:
-    """ "Given a Job definition this function returns the unique list of the
+    """Given a Job definition this function returns the unique list of the
     pull-secrets declared.
     """
     names: Set[str] = set()
@@ -226,7 +226,7 @@ def get_pull_secret_names(job_definition: Dict[str, Any]) -> Set[str]:
 
 
 def get_asset_names(job_definition: Dict[str, Any]) -> Set[str]:
-    """ "Given a Job definition this function returns the unique list of all the
+    """Given a Job definition this function returns the unique list of all the
     asset names declared. Asset names can be used in image environment
     variables and files.
     """
@@ -246,6 +246,27 @@ def get_asset_names(job_definition: Dict[str, Any]) -> Set[str]:
             asset_names.add(item["content-from"]["account-server-asset"]["name"])
 
     return asset_names
+
+
+def get_file_assets(job_definition: Dict[str, Any]) -> List[Dict[str, str]]:
+    """Given a Job definition this function returns the list of all the
+    file-based assets declared. What's returned is the asset 'name' and the
+    'image file' the asset is expected to mapped to.
+    """
+    file_assets: List[Dict[str, str]] = []
+
+    # Iterate through the file block...
+    file_block: List[Dict[str, Any]] = job_definition.get("image", {}).get("file", [])
+    for item in file_block:
+        if "account-server-asset" in item["content-from"]:
+            file_assets.append(
+                {
+                    "asset": item["content-from"]["account-server-asset"]["name"],
+                    "image-file": item["name"],
+                }
+            )
+
+    return file_assets
 
 
 def decode(
