@@ -1,4 +1,4 @@
-# Tests for the decoder's get_job_doc_url() function.
+# Tests for the decoder's get_pull_secret_names() function.
 from typing import Dict
 
 import pytest

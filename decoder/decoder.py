@@ -251,7 +251,10 @@ def get_asset_names(job_definition: Dict[str, Any]) -> Set[str]:
 def get_file_assets(job_definition: Dict[str, Any]) -> List[Dict[str, str]]:
     """Given a Job definition this function returns the list of all the
     file-based assets declared. What's returned is the asset 'name' and the
-    'image file' the asset is expected to mapped to.
+    'image file' the asset is expected to be mapped to.
+
+    In order to get the asset the caller will need to interact with the
+    Account Server (AS), what is returned here is the asset name, not the asset.
     """
     file_assets: List[Dict[str, str]] = []
 
@@ -267,6 +270,32 @@ def get_file_assets(job_definition: Dict[str, Any]) -> List[Dict[str, str]]:
             )
 
     return file_assets
+
+
+def get_environment_assets(job_definition: Dict[str, Any]) -> List[Dict[str, str]]:
+    """Given a Job definition this function returns the list of all the
+    environment-based assets declared. What's returned is the asset 'name' and the
+    environment 'variable' the asset is expected to be mapped to.
+
+    In order to get the asset the caller will need to interact with the
+    Account Server (AS), what is returned here is the asset name, not the asset.
+    """
+    env_assets: List[Dict[str, str]] = []
+
+    # Iterate through the environment block...
+    environment: List[Dict[str, Any]] = job_definition.get("image", {}).get(
+        "environment", []
+    )
+    for item in environment:
+        if "account-server-asset" in item["value-from"]:
+            env_assets.append(
+                {
+                    "asset": item["value-from"]["account-server-asset"]["name"],
+                    "variable": item["name"],
+                }
+            )
+
+    return env_assets
 
 
 def decode(

@@ -1,4 +1,4 @@
-# Tests for the decoder's get_file_assets() function.
+# Tests for the decoder's get_environment_assets() function.
 from typing import Dict
 
 import pytest
@@ -8,14 +8,14 @@ pytestmark = pytest.mark.unit
 from decoder import decoder
 
 
-def test_get_file_assets():
+def test_get_environment_assets():
     # Arrange
     job_definition: Dict = {
         "image": {
             "environment": [
                 {
                     "name": "BLOB",
-                    "value-from": {"account-server-asset": {"name": "asset-a"}},
+                    "value-from": {"account-server-asset": {"name": "asset-c"}},
                 }
             ],
             "file": [
@@ -32,15 +32,9 @@ def test_get_file_assets():
     }
 
     # Act
-    file_assets = decoder.get_file_assets(job_definition)
+    env_assets = decoder.get_environment_assets(job_definition)
 
     # Assert
-    assert len(file_assets) == 2
-    for file_asset in file_assets:
-        if file_asset["image-file"] == "/tmp/blob-1.txt":
-            assert file_asset["asset"] == "asset-a"
-        elif file_asset["image-file"] == "/tmp/blob-2.txt":
-            assert file_asset["asset"] == "asset-b"
-        else:
-            # How did we get here?
-            assert False
+    assert len(env_assets) == 1
+    assert env_assets[0]["asset"] == "asset-c"
+    assert env_assets[0]["variable"] == "BLOB"
