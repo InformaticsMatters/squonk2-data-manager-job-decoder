@@ -36,5 +36,5 @@ def test_get_environment_assets():
 
     # Assert
     assert len(env_assets) == 1
-    assert env_assets[0]["asset"] == "asset-c"
+    assert env_assets[0]["asset-name"] == "asset-c"
     assert env_assets[0]["variable"] == "BLOB"

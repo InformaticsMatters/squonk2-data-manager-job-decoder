@@ -38,9 +38,9 @@ def test_get_file_assets():
     assert len(file_assets) == 2
     for file_asset in file_assets:
         if file_asset["image-file"] == "/tmp/blob-1.txt":
-            assert file_asset["asset"] == "asset-a"
+            assert file_asset["asset-name"] == "asset-a"
         elif file_asset["image-file"] == "/tmp/blob-2.txt":
-            assert file_asset["asset"] == "asset-b"
+            assert file_asset["asset-name"] == "asset-b"
         else:
             # How did we get here?
             assert False

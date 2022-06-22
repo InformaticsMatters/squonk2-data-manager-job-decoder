@@ -264,7 +264,7 @@ def get_file_assets(job_definition: Dict[str, Any]) -> List[Dict[str, str]]:
         if "account-server-asset" in item["content-from"]:
             file_assets.append(
                 {
-                    "asset": item["content-from"]["account-server-asset"]["name"],
+                    "asset-name": item["content-from"]["account-server-asset"]["name"],
                     "image-file": item["name"],
                 }
             )
@@ -290,7 +290,7 @@ def get_environment_assets(job_definition: Dict[str, Any]) -> List[Dict[str, str
         if "account-server-asset" in item["value-from"]:
             env_assets.append(
                 {
-                    "asset": item["value-from"]["account-server-asset"]["name"],
+                    "asset-name": item["value-from"]["account-server-asset"]["name"],
                     "variable": item["name"],
                 }
             )
