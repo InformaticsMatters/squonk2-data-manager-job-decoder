@@ -388,6 +388,7 @@ definitions:
             type: string
 
   # A test option
+  # Arrays are assumed to be arrays of strings.
   test-option:
     type: object
     additionalProperties: false
@@ -397,6 +398,7 @@ definitions:
         - type: string
         - type: number
         - type: boolean
+        - type: array
 
   # Test output checks
   test-checks-output:

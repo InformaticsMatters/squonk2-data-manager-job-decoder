@@ -206,3 +206,20 @@ def test_validate_two_basic_tests():
 
     # Assert
     assert error is None
+
+
+def test_validate_test_option_array():
+    # Arrange
+    text: Dict[str, Any] = deepcopy(_MINIMAL)
+    demo_job: Dict[str, Any] = text["jobs"]["demo"]
+    demo_job["tests"] = {
+        "option-array": {
+            "options": {"param-array": ["a", "b"]},
+        },
+    }
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
