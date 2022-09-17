@@ -69,4 +69,4 @@ Get in touch
 
 - Report bugs, suggest features or view the source code `on GitHub`_.
 
-.. _on GitHub: https://github.com/informaticsmatters/data-manager-job-decoder
+.. _on GitHub: https://github.com/informaticsmatters/squonk2-data-manager-job-decoder

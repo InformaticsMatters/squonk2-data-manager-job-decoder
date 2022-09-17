@@ -21,7 +21,7 @@ setuptools.setup(
     version=os.environ.get("GITHUB_REF_SLUG", "1.0.0"),
     author="Alan Christie",
     author_email="achristie@informaticsmatters.com",
-    url="https://github.com/informaticsmatters/data-manager-job-decoder",
+    url="https://github.com/informaticsmatters/squonk2-data-manager-job-decoder",
     license="MIT",
     description="Job decoding logic",
     long_description=long_description,
