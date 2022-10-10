@@ -30,6 +30,8 @@ properties:
     pattern: '^[a-z]{1}[a-z0-9-]*$'
   jobs:
     $ref: '#/definitions/job-identity'
+  test-groups:
+    $ref: '#/definitions/test-groups'
 required:
 - kind
 - kind-version
@@ -323,6 +325,26 @@ definitions:
     maxLength: 63
     pattern: '^[a-z]([a-z0-9-]*[a-z0-9])?$'
 
+  # Test groups.
+  # A list of groups that have a name and optional compose-file.
+  test-groups:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 63
+          pattern: '^[a-z]{1}[a-z0-9-]*$'
+        compose-file:
+          type: string
+          pattern: '^docker-compose(-[a-z0-9-]{1,})?.yaml$'
+      required:
+      - name
+    additionalProperties: false
+
   # An individual Test.
   # Consists of a identity (i.e. 'test-filter-molecules')
   # followed by a Test object.
@@ -346,6 +368,10 @@ definitions:
     type: object
     additionalProperties: false
     properties:
+      run-groups:
+        type: array
+        items:
+          $ref: '#/definitions/run-group'
       run-level:
         type: integer
         minimum: 1
@@ -374,6 +400,21 @@ definitions:
               $ref: '#/definitions/test-checks-output'
         required:
         - exitCode
+
+  run-group:
+    type: object
+    additionalProperties: false
+    properties:
+      name:
+        type: string
+        minLength: 1
+        maxLength: 63
+        pattern: '^[a-z]{1}[a-z0-9-]*$'
+      ordinal:
+        type: integer
+        minimum: 1
+    required:
+    - name
 
   # A test input, a string or array of strings
   test-input:
