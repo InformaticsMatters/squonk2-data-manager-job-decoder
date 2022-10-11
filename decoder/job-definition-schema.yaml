@@ -368,6 +368,8 @@ definitions:
     type: object
     additionalProperties: false
     properties:
+      nextflow-config-file:
+        type: string
       run-groups:
         type: array
         items:
