@@ -257,7 +257,10 @@ def test_validate_test_run_groups():
     demo_job: Dict[str, Any] = text["jobs"]["demo"]
     demo_job["tests"] = {
         "basic-1": {
-            "run-groups": [{"name": "demo-1"}, {"name": "demo-2", "ordinal": 1}],
+            "run-groups": [
+                {"name": "demo-1", "ordinal": 1},
+                {"name": "demo-2", "ordinal": 1},
+            ],
         },
     }
 
@@ -266,3 +269,20 @@ def test_validate_test_run_groups():
 
     # Assert
     assert error is None
+
+
+def test_validate_test_run_groups_without_ordinal():
+    # Arrange
+    text: Dict[str, Any] = deepcopy(_MINIMAL)
+    demo_job: Dict[str, Any] = text["jobs"]["demo"]
+    demo_job["tests"] = {
+        "basic-1": {
+            "run-groups": [{"name": "demo-1"}, {"name": "demo-2"}],
+        },
+    }
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error == "'ordinal' is a required property"

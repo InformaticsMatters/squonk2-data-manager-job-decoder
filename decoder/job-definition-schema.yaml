@@ -415,6 +415,7 @@ definitions:
         minimum: 1
     required:
     - name
+    - ordinal
 
   # A test input, a string or array of strings
   test-input:
