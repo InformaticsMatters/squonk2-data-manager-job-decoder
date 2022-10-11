@@ -241,7 +241,24 @@ def test_validate_test_groups_with_compose():
     # Arrange
     text: Dict[str, Any] = deepcopy(_MINIMAL)
     text["test-groups"] = [
-        {"name": "demo-1", "compose-file": "docker-compose-abc.yaml"}
+        {"name": "demo-1", "compose": {"file": "docker-compose-abc.yaml"}}
+    ]
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
+def test_validate_test_groups_with_compose_delay():
+    # Arrange
+    text: Dict[str, Any] = deepcopy(_MINIMAL)
+    text["test-groups"] = [
+        {
+            "name": "demo-1",
+            "compose": {"file": "docker-compose-abc.yaml", "delay-seconds": 10},
+        }
     ]
 
     # Act
