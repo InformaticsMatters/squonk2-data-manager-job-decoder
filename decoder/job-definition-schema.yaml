@@ -350,8 +350,23 @@ definitions:
               minimum: 1
           required:
           - file
+        environment:
+          type: array
+          additionalProperties: false
+          items:
+            $ref: '#/definitions/test-group-environment-entry'
       required:
       - name
+    additionalProperties: false
+
+  test-group-environment-entry:
+    type: object
+    patternProperties:
+      '^[a-zA-Z_]{1,}[a-zA-Z0-9_]{0,}$':
+        oneOf:
+        - type: string
+        - type: number
+        - type: boolean
     additionalProperties: false
 
   # An individual Test.

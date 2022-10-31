@@ -237,6 +237,23 @@ def test_validate_test_groups():
     assert error is None
 
 
+def test_validate_test_groups_with_environment():
+    # Arrange
+    text: Dict[str, Any] = deepcopy(_MINIMAL)
+    text["test-groups"] = [
+        {
+            "name": "demo-1",
+            "environment": [{"ENV_A": "1"}, {"ENV_B": 2}, {"ENV_C": True}],
+        }
+    ]
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
 def test_validate_test_groups_with_compose():
     # Arrange
     text: Dict[str, Any] = deepcopy(_MINIMAL)
