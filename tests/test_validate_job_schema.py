@@ -164,11 +164,37 @@ def test_validate_image_cores_1():
     assert error is None
 
 
-def test_validate_image_cores_32():
+def test_validate_image_cores_99():
     # Arrange
     text: Dict[str, Any] = deepcopy(_MINIMAL)
     demo_job: Dict[str, Any] = text["jobs"]["demo"]
-    demo_job["image"]["cores"] = 32
+    demo_job["image"]["cores"] = 99
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
+def test_validate_image_cores_10m():
+    # Arrange
+    text: Dict[str, Any] = deepcopy(_MINIMAL)
+    demo_job: Dict[str, Any] = text["jobs"]["demo"]
+    demo_job["image"]["cores"] = "10m"
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
+def test_validate_image_cores_1500m():
+    # Arrange
+    text: Dict[str, Any] = deepcopy(_MINIMAL)
+    demo_job: Dict[str, Any] = text["jobs"]["demo"]
+    demo_job["image"]["cores"] = "1500m"
 
     # Act
     error = decoder.validate_job_schema(text)
