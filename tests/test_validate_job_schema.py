@@ -155,7 +155,7 @@ def test_validate_image_cores_1():
     # Arrange
     text: Dict[str, Any] = deepcopy(_MINIMAL)
     demo_job: Dict[str, Any] = text["jobs"]["demo"]
-    demo_job["image"]["cores"] = 1
+    demo_job["image"]["cores"] = "1"
 
     # Act
     error = decoder.validate_job_schema(text)
@@ -168,7 +168,7 @@ def test_validate_image_cores_99():
     # Arrange
     text: Dict[str, Any] = deepcopy(_MINIMAL)
     demo_job: Dict[str, Any] = text["jobs"]["demo"]
-    demo_job["image"]["cores"] = 99
+    demo_job["image"]["cores"] = "99"
 
     # Act
     error = decoder.validate_job_schema(text)
