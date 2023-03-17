@@ -89,6 +89,8 @@ definitions:
         maxLength: 4096
       tests:
         $ref: '#/definitions/job-test'
+      replaces:
+        $ref: '#/definitions/replace-list'
     required:
     - name
     - version
@@ -327,6 +329,31 @@ definitions:
     minLength: 1
     maxLength: 63
     pattern: '^[a-z]([a-z0-9-]*[a-z0-9])?$'
+
+  # A 'replaces' object.
+  # A job definition can include this 'replaces' list
+  # to identify a Job (and collection) it replaces.
+  # A job can replace more than one Job, but each jab that's replaced
+  # must include the job and collection it belongs to.
+  replace-list:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      properties:
+        collection:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: '^[a-z]{1}[a-z0-9-]*$'
+        job:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: '^[a-z]{1}[a-z0-9-]*$'
+      required:
+      - collection
+      - job
 
   # Test groups.
   # A list of groups that have a name and optional compose-file.

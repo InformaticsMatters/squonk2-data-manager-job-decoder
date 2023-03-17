@@ -346,3 +346,15 @@ def test_validate_test_run_groups_without_ordinal():
 
     # Assert
     assert error == "'ordinal' is a required property"
+
+
+def test_validate_replaces():
+    text: Dict[str, Any] = deepcopy(_MINIMAL)
+    demo_job: Dict[str, Any] = text["jobs"]["demo"]
+    demo_job["replaces"] = [{"collection": "test-collection", "job": "test-job"}]
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
