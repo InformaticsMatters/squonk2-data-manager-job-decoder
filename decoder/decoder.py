@@ -54,6 +54,11 @@ class TextEncoding(enum.Enum):
     JINJA2_3_0 = 1  # Encoding that complies with Jinja2 v3.0.x
 
 
+def get_job_key(collection: str, job: str) -> str:
+    """Returns the job Key, a string formed from "<collection>|<job>."""
+    return f"{collection}|{job}"
+
+
 def validate_manifest_schema(manifest: Dict[str, Any]) -> Optional[str]:
     """Checks the Job Definition Manifest (a preloaded job-definition dictionary)
     against the built-in schema. If there's an error the error text is
@@ -296,6 +301,22 @@ def get_environment_assets(job_definition: Dict[str, Any]) -> List[Dict[str, str
             )
 
     return env_assets
+
+
+def get_jobs_replaced(job_definition: Dict[str, Any]) -> Optional[List[str]]:
+    """Given a Job Definition this function returns the Jobs it replaces.
+    The returned list is a list of jobs identified by collection and
+    job delimited with '|', e.g. string like "test-collection|test-job".
+    """
+    replaces_list: List[Dict[str, str]] = job_definition.get("replaces", [])
+    if not replaces_list:
+        return None
+    replaced: Set[str] = set()
+    for replaces in replaces_list:
+        r_collection: str = replaces["collection"]
+        r_job: str = replaces["job"]
+        replaced.add(get_job_key(r_collection, r_job))
+    return list(replaced)
 
 
 def decode(
