@@ -8,6 +8,30 @@ pytestmark = pytest.mark.unit
 from decoder import decoder
 
 
+def test_get_job_key():
+    # Arrange
+    j_collection: str = "c-1"
+    j_job: str = "j-1"
+
+    # Act
+    key = decoder.get_job_key(collection=j_collection, job=j_job)
+
+    # Assert
+    assert key == "c-1|j-1"
+
+
+def test_get_job_from_key():
+    # Arrange
+    j_key: str = "c-1|j-1"
+
+    # Act
+    j_collection, j_job = decoder.get_job_from_key(key=j_key)
+
+    # Assert
+    assert j_collection == "c-1"
+    assert j_job == "j-1"
+
+
 def test_jinja2_3_0_decode():
     # Arrange
     text: str = "foo={{ foo }}, bar={{ bar }}, baz={{ baz }}"
