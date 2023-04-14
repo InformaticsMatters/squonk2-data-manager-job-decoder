@@ -329,15 +329,13 @@ def get_jobs_replaced(job_definition: Dict[str, Any]) -> Optional[List[str]]:
 
 
 def get_outputs(job_definition: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Given a Job Definition this function returns the outputs declared.
-    """
-    return job_definition.get('variables', {}).get('outputs', {}).get('properties', {})
+    """Given a Job Definition this function returns the outputs declared."""
+    return job_definition.get("variables", {}).get("outputs", {}).get("properties", {})
 
 
 def get_inputs(job_definition: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Given a Job Definition this function returns the inputs declared.
-    """
-    return job_definition.get('variables', {}).get('inputs', {}).get('properties', {})
+    """Given a Job Definition this function returns the inputs declared."""
+    return job_definition.get("variables", {}).get("inputs", {}).get("properties", {})
 
 
 def decode(
