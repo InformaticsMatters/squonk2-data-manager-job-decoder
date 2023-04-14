@@ -16,7 +16,7 @@ def test_get_inputs_when_none():
     inputs = decoder.get_inputs(job_definition)
 
     # Assert
-    assert inputs is None
+    assert inputs == {}
 
 
 def test_get_inputs():
