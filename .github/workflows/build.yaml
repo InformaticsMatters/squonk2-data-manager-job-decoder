@@ -22,6 +22,9 @@ on:
     - '**'
     tags-ignore:
     - '**'
+  schedule:
+  # Build daily at 6:04am...
+  - cron: '4 6 * * *'
 
 jobs:
   build:
@@ -29,6 +32,7 @@ jobs:
     strategy:
       matrix:
         python-version:
+        - '3.10'
         - '3.11'
     steps:
     - name: Checkout
