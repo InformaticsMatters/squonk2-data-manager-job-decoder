@@ -5,6 +5,14 @@ Informatics Matters Data Manager Job Decoder
    :target: https://badge.fury.io/py/im-data-manager-job-decoder
    :alt: PyPI package (latest)
 
+.. image:: https://github.com/InformaticsMatters/squonk2-data-manager-job-decoder/actions/workflows/build.yaml/badge.svg
+   :target: https://github.com/InformaticsMatters/squonk2-data-manager-job-decoder/actions/workflows/build.yaml
+   :alt: Build
+
+.. image:: https://github.com/InformaticsMatters/squonk2-data-manager-job-decoder/actions/workflows/publish.yaml/badge.svg
+   :target: https://github.com/InformaticsMatters/squonk2-data-manager-job-decoder/actions/workflows/publish.yaml
+   :alt: Publish
+
 A package that simplifies the decoding of encoded text strings.
 Given an encoded string the ``decode()`` method
 returns the decoded value or an error.
