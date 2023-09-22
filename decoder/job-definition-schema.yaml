@@ -72,6 +72,14 @@ definitions:
         type: string
       # The doc-url must either start 'https', or with a letter.
       # It cannot end with '/'.
+      # If it starts 'https' it will be used verbatim, and is expected
+      # to refer to a documentation file, e.g. 'https://example.com/job-doc.md'
+      # Otherwise it is assumed to be relative to the URL used for the Manifest
+      # that loaded this file, where all documents are expected to reside in
+      # 'docs'. If the doc-url is not set the decoder will expect documentation for the
+      # job to be found in 'docs/{collection}/{job}.md'. If doc-url is not null
+      # (and does not start 'https') the decoder will expect the documentation
+      # to be found in 'docs/{doc-url}'.
       doc-url:
         type: string
         pattern: '^(https|[a-z]).+(?<!/)$'
