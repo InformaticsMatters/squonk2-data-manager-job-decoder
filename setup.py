@@ -27,6 +27,7 @@ setuptools.setup(
     long_description=long_description,
     keywords="jinja2 decoder",
     platforms=["any"],
+    python_requires=">=3.10",
     # Our modules to package
     packages=["decoder"],
     include_package_data=True,
@@ -39,6 +40,7 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Operating System :: POSIX :: Linux",
     ],

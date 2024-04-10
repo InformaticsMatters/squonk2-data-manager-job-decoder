@@ -1,5 +1,6 @@
 """A decoder for jinja2 3.0.x formatted strings.
 """
+
 from typing import Dict, Optional, Set, Tuple
 
 import jinja2

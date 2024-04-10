@@ -4,6 +4,7 @@ This is typically used by the Data Manager's API instance methods
 when launching applications (and Jobs) where text requires decoding,
 given a 'template' string and a 'dictionary' of parameters and values.
 """
+
 import enum
 import os
 import re
