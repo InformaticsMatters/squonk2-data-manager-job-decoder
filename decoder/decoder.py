@@ -339,6 +339,13 @@ def get_inputs(job_definition: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     return job_definition.get("variables", {}).get("inputs", {}).get("properties", {})
 
 
+def get_image(job_definition: Dict[str, Any]) -> Tuple[str, str]:
+    """Given a Job Definition this function returns the image name and tag."""
+    image_name: str = str(job_definition.get("image", {}).get("name", ""))
+    image_tag: str = str(job_definition.get("image", {}).get("tag", ""))
+    return image_name, image_tag
+
+
 def decode(
     template_text: str,
     variable_map: Optional[Dict[str, str]],
