@@ -8,7 +8,7 @@ given a 'template' string and a 'dictionary' of parameters and values.
 import enum
 import os
 import re
-from typing import Any, Dict, List, Optional, Pattern, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import jsonschema
 import yaml
@@ -46,7 +46,11 @@ REPO_TYPE_GITHUB: str = "github"
 REPO_TYPE_GITLAB: str = "gitlab"
 _REPO_TYPES: List[str] = [REPO_TYPE_GITHUB, REPO_TYPE_GITLAB]
 
-_GITHUB_REF_RE: Pattern[str] = re.compile(r"/([^/]+)/data-manager/")
+_GITHUB_REF_RE: re.Pattern = re.compile(r"/([^/]+)/data-manager/")
+
+# Patterns for Collection and Job names
+_COLLECTION_NAME_RE: re.Pattern = re.compile(r"([a-z]{1}[a-z0-9-]{0,79})")
+_JOB_NAME_RE: re.Pattern = re.compile(r"([a-z]{1}[a-z0-9-]{0,79})")
 
 _JOB_KEY_DELIMITER: str = "|"
 
@@ -55,6 +59,16 @@ class TextEncoding(enum.Enum):
     """A general text encoding format, used initially for Job text fields."""
 
     JINJA2_3_0 = 1  # Encoding that complies with Jinja2 v3.0.x
+
+
+def is_valid_collection_name(collection: str) -> bool:
+    """Returns True if the collection name is valid"""
+    return _COLLECTION_NAME_RE.fullmatch(collection) is not None
+
+
+def is_valid_job_name(job: str) -> bool:
+    """Returns True if the collection name is valid"""
+    return _JOB_NAME_RE.fullmatch(job) is not None
 
 
 def get_job_key(*, collection: str, job: str) -> str:

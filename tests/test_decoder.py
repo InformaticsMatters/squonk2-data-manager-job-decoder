@@ -76,3 +76,43 @@ def test_jinja2_3_0_decode_without_variables():
     # Assert
     assert success
     assert rendered == expected_text
+
+
+def test_is_valid_collection_name_when_not_valid():
+    # Arrange
+
+    # Act
+    success = decoder.is_valid_collection_name("blob.yaml")
+
+    # Assert
+    assert not success
+
+
+def test_is_valid_collection_name_when_valid():
+    # Arrange
+
+    # Act
+    success = decoder.is_valid_collection_name("collection-1")
+
+    # Assert
+    assert success
+
+
+def test_is_valid_job_name_when_not_valid():
+    # Arrange
+
+    # Act
+    success = decoder.is_valid_job_name("blob.yaml")
+
+    # Assert
+    assert not success
+
+
+def test_is_valid_job_name_when_valid():
+    # Arrange
+
+    # Act
+    success = decoder.is_valid_job_name("job-1")
+
+    # Assert
+    assert success
