@@ -583,6 +583,8 @@ definitions:
         - number
         - boolean
         - array
+      multiple:
+        type: boolean
       pattern:
         type: string
       minimum:

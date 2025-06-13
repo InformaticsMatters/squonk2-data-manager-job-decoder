@@ -1,5 +1,3 @@
-# yaml-language-server: $schema=file:///Users/alan/Code/InformaticsMatters/squonk2-data-manager-job-decoder/decoder/job-definition-schema.yaml
-
 ---
 kind: DataManagerJobDefinition
 kind-version: '2021.1'
