@@ -13,7 +13,9 @@ Informatics Matters Data Manager Job Decoder
    :target: https://github.com/InformaticsMatters/squonk2-data-manager-job-decoder/actions/workflows/publish.yaml
    :alt: Publish
 
-A package that simplifies the decoding of encoded text strings.
+A package that simplifies the decoding of encoded text strings and validation
+of Job Definitions and Manifests.
+
 Given an encoded string the ``decode()`` method
 returns the decoded value or an error.
 
@@ -30,6 +32,14 @@ The package also provides ``validate_job_schema()`` and
 ``validate_manifest_schema()`` functions, which can (should) be used to
 validate the Manifests and Job definitions against the
 built-in schemas.
+
+If you have a Job Definition or Manifest file you can add a reference to the
+corresponding schema in this package to your file to help you identify schema
+violations prior to deployment. To do this you just need to add a line starting
+``# yaml-language-server:`` at the top of your file. For example,
+you can link to the **v2.3.0** Job Definition schema by adding the following line::
+
+    # yaml-language-server: $schema=https://raw.githubusercontent.com/InformaticsMatters/squonk2-data-manager-job-decoder/refs/tags/2.3.0/decoder/job-definition-schema.yaml
 
 .. _jinja2: https://jinja.palletsprojects.com/en/3.0.x/
 
