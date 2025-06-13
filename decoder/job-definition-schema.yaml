@@ -95,6 +95,8 @@ definitions:
         type: string
         minLength: 1
         maxLength: 4096
+      variables:
+        $ref: '#/definitions/job-variables'
       tests:
         $ref: '#/definitions/job-test'
       replaces:
@@ -414,6 +416,197 @@ definitions:
         - type: number
         - type: boolean
     additionalProperties: false
+
+  # Job Variables.
+  # Consists of inputs, options and variables (not are required)
+  job-variables:
+    type: object
+    additionalProperties: false
+    properties:
+      inputs:
+        $ref: '#/definitions/job-input-variables'
+      options:
+        $ref: '#/definitions/job-option-variables'
+      order:
+        $ref: '#/definitions/job-order-variables'
+      outputs:
+        $ref: '#/definitions/job-output-variables'
+
+  # Variable ordering (inputs, options, outputs)
+  job-order-variables:
+    type: object
+    additionalProperties: false
+    properties:
+      inputs:
+        type: array
+        items:
+          type: string
+      options:
+        type: array
+        items:
+          type: string
+      outputs:
+        type: array
+        items:
+          type: string
+
+  # Variables (inputs)
+  job-input-variables:
+    type: object
+    additionalProperties: false
+    properties:
+      type:
+        type: string
+        enum:
+        - object
+      required:
+        type: array
+        items:
+          type: string
+      properties:
+        $ref: '#/definitions/job-input-properties'
+    required:
+    - type
+    - properties
+
+  job-input-properties:
+    type: object
+    additionalProperties: false
+    patternProperties:
+      '^[a-zA-Z]{1}[a-zA-Z0-9-_]{0,79}$':
+        $ref: '#/definitions/job-input-property'
+
+  job-input-property:
+    type: object
+    additionalProperties: false
+    properties:
+      title:
+        type: string
+      mime-types:
+        type: array
+        items:
+          type: string
+      type:
+        type: string
+        enum:
+        - file
+        - molecules-smi
+      multiple:
+        type: boolean
+    required:
+    - title
+    - type
+
+  # Variables (outputs)
+  job-output-variables:
+    type: object
+    additionalProperties: false
+    properties:
+      type:
+        type: string
+        enum:
+        - object
+      properties:
+        $ref: '#/definitions/job-output-properties'
+    required:
+    - type
+    - properties
+
+  job-output-properties:
+    type: object
+    additionalProperties: false
+    patternProperties:
+      '^[a-zA-Z]{1}[a-zA-Z0-9-_]{0,79}$':
+        $ref: '#/definitions/job-output-property'
+
+  job-output-property:
+    type: object
+    additionalProperties: false
+    properties:
+      title:
+        type: string
+      mime-types:
+        type: array
+        items:
+          type: string
+      creates:
+        type: string
+      type:
+        type: string
+        enum:
+        - file
+      annotation-properties:
+        type: object
+        additionalProperties: true
+    required:
+    - title
+    - creates
+    - type
+
+  # Variables (options)
+  job-option-variables:
+    type: object
+    additionalProperties: false
+    properties:
+      type:
+        type: string
+        enum:
+        - object
+      required:
+        type: array
+        items:
+          type: string
+      properties:
+        $ref: '#/definitions/job-option-properties'
+    required:
+    - type
+    - properties
+
+  job-option-properties:
+    type: object
+    additionalProperties: false
+    patternProperties:
+      '^[a-zA-Z]{1}[a-zA-Z0-9-_]{0,79}$':
+        $ref: '#/definitions/job-option-property'
+
+  job-option-property:
+    type: object
+    additionalProperties: false
+    properties:
+      title:
+        type: string
+      type:
+        type: string
+        enum:
+        - string
+        - integer
+        - number
+        - boolean
+        - array
+      pattern:
+        type: string
+      minimum:
+        type: number
+      maximum:
+        type: number
+      default:
+        oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+      enum:
+        type: array
+        items:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+      items:
+        type: object
+        additionalProperties: true
+    required:
+    - title
+    - type
 
   # An individual Test.
   # Consists of a identity (i.e. 'test-filter-molecules')

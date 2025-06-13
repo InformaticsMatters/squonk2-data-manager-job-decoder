@@ -1,0 +1,1957 @@
+---
+# A Data-Manager Job definition, defining 1 or more Data Manager Jobs.
+# For v1 the 'kind-version' must be '2021.1'
+kind: DataManagerJobDefinition
+kind-version: '2021.1'
+
+# An arbitrary name (ignored by the DataManager)
+name: Virtual screening tools using RDKit, OpenBabel and other open source tools
+
+# The 'collection' for the jobs named in this definition.
+#
+# A collection ensures that all of the Jobs have unique names so that they
+# can be easily identified. A collection can be used by more than one
+# JobDefinition file but all the Job identities in a given collection must
+# be unique. i.e. our "shard-molecules" Job ID is unique because
+# it's in the collection "im-rdkit-virtual-screening" and there is no
+# other "shard-molecules" in the same collection. It is different
+# to any "shard-molecules" Job identity in any other collection.
+# The collection must only container lower-case letters, numbers and a hyphen
+# and must begin with a letter.
+collection: im-virtual-screening
+
+# Job definitions.
+# A list of jobs indexed using a unique identity (i.e. "shared-molecules").
+# Job identities must only container lower-case letters, numbers or a hyphen
+# and must begin with a letter.
+jobs:
+
+  # simple (non-nextflow) jobs ------------------------------------------------
+  # Where image->type is 'simple' (the default)
+
+  # Guide to properties
+  # name: An arbitrary name.
+  #       The job is actually referred to in the API using the job (above),
+  #       e.g. 'shard-molecules'. The name is simply here as a human-friendly
+  #       reference.
+  # description: Human readable description
+  # version: Any string, but typically something compatible with SemVer 2.0.0
+  # image: name: The container image that contains the Job implementation
+  #        tag: ... along with the image tag
+  #        project-directory: (mount-point) to use for the Project data
+  #        working-directory: which is default dir in the running container
+  #          (stick with /data for both the above)
+  #        type: you can also add a type enumeration ('simple' or 'nextflow'),
+  #          although this field is optional (simple is default).
+  #        fix-permissions: will update the ownership and permissions of the declared outputs.
+  #          Define this unless you are using your own mechanism
+  # command: The command that will be used as the Kubernetes Pod 'command'
+  #          (after variable expansion). This is a jinja2 template with its variables
+  #          described in the `variables` block below (A JSONSchema block).
+  # variables: Command variables - using JSONSchema to allow for simplified client
+  #            presentation to the user. 'inputs' and 'outputs' use custom types
+  #            and typically consist of the definition of input files and output
+  #            directories and files. 'options' are generic JSONSchema types,
+  #            like 'strings', 'integers' etc.
+  #            Every 'variable' expected by the command must be represented by a
+  #            corresponding property in 'inputs', 'outputs' or 'options'.
+
+  fail-test:
+    name: Test failures
+    description: >-
+      Simple job that allows how errors are handled to be tested
+    version: '1.0.0'
+    category: miscellaneous
+    keywords:
+    - test
+    image:
+      name: informaticsmatters/vs-prep
+      tag: 'stable'
+      project-directory: /data
+      working-directory: /data
+      fix-permissions: true
+    command: >-
+      /code/fail.py --mode '{{ mode }}' --output '{{ output }}'
+    variables:
+      outputs:
+        type: object
+        properties:
+          outputFile:
+            title: Test output
+            mime-types:
+            - text/plain
+            creates: '{{ output }}'
+            type: file
+      options:
+        type: object
+        required:
+        - mode
+        - output
+        properties:
+          mode:
+            title: Failure mode
+            type: string
+            enum:
+            - error
+            - empty
+            - missing
+          output:
+            title: Output filename
+            type: string
+            pattern: "^[A-Za-z0-9_/\\.\\-]+$"
+    tests:
+      error:
+        options:
+          mode: error
+          output: error.txt
+        checks:
+          exitCode: 1
+          outputs:
+          - name: error.txt
+            checks:
+            - exists: false
+      missing:
+        options:
+          mode: missing
+          output: missing.txt
+        checks:
+          exitCode: 0
+          outputs:
+          - name: missing.txt
+            checks:
+            - exists: false
+      empty:
+        options:
+          mode: empty
+          output: empty.txt
+        checks:
+          exitCode: 0
+          outputs:
+          - name: empty.txt
+            checks:
+            - exists: true
+
+  obabel-convert:
+    name: Convert molecule format
+    description: >-
+      Convert molecular formats using OpenBabel. Can be used to prepare a protein for docking.
+      See the docs for more info of all the options.
+    version: '1.0.0'
+    category: virtual screening
+    keywords:
+    - protein preparation
+    - openbabel
+    image:
+      name: informaticsmatters/vs-prep
+      tag: 'stable'
+      project-directory: /data
+      working-directory: /data
+      fix-permissions: true
+    command: >-
+      obabel
+      '{{ inputFile }}'
+      {{ options }}
+      {% if options is defined %}{{ options }}{% endif %}
+      -O '{{ outputFile }}'
+    variables:
+      inputs:
+        type: object
+        required:
+        - inputFile
+        properties:
+          inputFile:
+            title: Input file (e.g. pdb, pdbqt, mol or mol2 extension)
+            mime-types:
+            - chemical/x-pdb
+            - chemical/x-pdbqt
+            - chemical/x-mol2
+            - chemical/x-mol
+            type: file
+      outputs:
+        type: object
+        properties:
+          outputFile:
+            title: Converted molecule
+            mime-types:
+            - chemical/x-pdb
+            - chemical/x-pdbqt
+            - chemical/x-mol2
+            - chemical/x-mol
+            creates: '{{ outputFile }}'
+            type: file
+      options:
+        type: object
+        required:
+        - outputFile
+        properties:
+          outputFile:
+            title: Filename for output (e.g. pdb, pdbqt, mol or mol2 extension)
+            type: string
+          options:
+            title: Additional options. e.g. -p 7.0
+            type: string
+
+  pdb2pqr:
+    name: Prepare protein using pdb2pqr
+    description: >-
+      Prepare a protein for docking by using pdb2pqr. This can replace missing heavy atoms
+      and protonate the protein at a specific pH taking into account the local environment
+      of titratable groups, such as the hydrogen bonding network.
+    version: '1.0.0'
+    category: virtual screening
+    keywords:
+    - protein preparation
+    - pdb2pqr
+    - protonation
+    - 3d
+    image:
+      name: informaticsmatters/vs-prep
+      tag: 'stable'
+      project-directory: /data
+      working-directory: /data
+      fix-permissions: true
+    command: >-
+      pdb2pqr30 --with-ph {{ ph }}
+      --titration-state-method propka
+      --pdb-output '{{ outfileBasename }}.pdb'
+      '{{ inputFile }}'
+      '{{ outfileBasename }}.pqr'
+    variables:
+      inputs:
+        type: object
+        required:
+        - inputFile
+        properties:
+          inputFile:
+            title: Input PDB file
+            mime-types:
+            - chemical/x-pdb
+            type: file
+      outputs:
+        type: object
+        properties:
+          pdbFile:
+            title: PDB file
+            mime-types:
+            - chemical/x-pdb
+            creates: '{{ outfileBasename }}.pdb'
+            type: file
+          pqrFile:
+            title: PQR file
+            mime-types:
+            - chemical/x-pqr
+            creates: '{{ outfileBasename }}.pqr'
+            type: file
+          logFile:
+            title: Log file
+            mime-types:
+            - text/plain
+            creates: '{{ outfileBasename }}.log'
+            type: file
+      options:
+        type: object
+        required:
+        - outfileBasename
+        - ph
+        properties:
+          ph:
+            title: pH to protonate at
+            type: number
+            default: 7
+          outfileBasename:
+            title: Base filename for output (do not include the extension)
+            type: string
+            pattern: "^[A-Za-z0-9_/\\.\\-]+$"
+    tests:
+      simple-execution:
+        inputs:
+          inputFile: data/dhfr-receptor.pdb
+        options:
+          outfileBasename: pdb2pqr-results
+          ph: 7
+        checks:
+          exitCode: 0
+          outputs:
+          - name: pdb2pqr-results.pqr
+            checks:
+            - exists: true
+          - name: pdb2pqr-results.pdb
+            checks:
+            - exists: true
+          - name: pdb2pqr-results.log
+            checks:
+            - exists: true
+
+  prepare-rdock:
+    name: rDock prepare
+    description: >-
+      Prepare rDock configuration file (.prm file) and the cavity definition (.as file).
+    version: '1.0.0'
+    category: virtual screening
+    keywords:
+    - protein preparation
+    - rdock
+    - 3d
+    image:
+      name: informaticsmatters/vs-rdock
+      tag: 'stable'
+      project-directory: /data
+      working-directory: /data
+      fix-permissions: true
+    command: >-
+      /code/prepare_rdock.py
+      --receptor '{{ receptorFile }}'
+      --ligand '{{ ligandFile }}'
+      --output '{{ outputBaseName }}'
+    variables:
+      inputs:
+        type: object
+        required:
+        - receptorFile
+        - ligandFile
+        properties:
+          receptorFile:
+            title: MOL2 file for receptor
+            mime-types:
+            - chemical/x-mol2
+            type: file
+          ligandFile:
+            title: Molfile file for ligand
+            mime-types:
+            - chemical/x-mdl-molfile
+            type: file
+      outputs:
+        type: object
+        properties:
+          prmFile:
+            title: Docking configuration file
+            mime-types:
+            - squonk/x-rdock-prm
+            creates: '{{ outputBaseName }}.prm'
+            type: file
+          asFile:
+            title: Cavity definition file
+            mime-types:
+            - squonk/x-rdock-as
+            creates: '{{ outputBaseName }}.as'
+            type: file
+      options:
+        type: object
+        required:
+        - outputBaseName
+        properties:
+          outputBaseName:
+            title: Base name for output files
+            type: string
+            default: docking
+
+  ultrafast-shape-recognition:
+    name: USR shape similarity
+    description: >-
+      Filters molecules using 3D shape similarity and the USR, Electroshape or USRCAT algorithms
+    version: '1.0.0'
+    category: virtual screening
+    keywords:
+    - oddt
+    - similarity
+    - shape
+    - usr
+    - electroshape
+    - usrcat
+    - filter
+    - 3d
+    image:
+      name: informaticsmatters/vs-oddt
+      tag: 'stable'
+      project-directory: /data
+      working-directory: /data
+      fix-permissions: true
+    command: >-
+      /code/usr.py --inputs '{{ inputFile }}'
+      --query '{{ queryFile }}'
+      --outfile '{{ outputFile }}'
+      --method {{ method }}
+      --threshold {{ threshold }}
+      {% if groupBy is defined %}--group-by-field {{ groupBy }}{% endif %}
+      --interval 1000
+    variables:
+      order:
+        inputs:
+        - queryFile
+        - inputFile
+        options:
+        - method
+        - threshold
+        - groupBy
+        - outputFile
+      inputs:
+        type: object
+        required:
+        - queryFile
+        - inputFile
+        properties:
+          inputFile:
+            title: Molecules to screen
+            mime-types:
+            - chemical/x-mdl-sdfile
+            type: file
+          queryFile:
+            title: Query molecule
+            mime-types:
+            - chemical/x-mdl-molfile
+            - chemical/x-mdl-sdfile
+            type: file
+      outputs:
+        type: object
+        properties:
+          outputFile:
+            title: Output file
+            mime-types:
+            - chemical/x-mdl-sdfile
+            creates: '{{ outputFile }}'
+            type: file
+            annotation-properties:
+              fields-descriptor:
+                origin: squonk2-job
+                description: Molecular shape similarity
+                fields:
+                  similarity:
+                    expression: '{{ method }}_similarity'
+                    type: number
+                    description: >-
+                      Shape similarity
+                    required: true
+                    active: true
+              derived-from: inputFile
+      options:
+        type: object
+        required:
+        - method
+        - threshold
+        - outputFile
+        properties:
+          method:
+            title: USR method
+            type: string
+            enum:
+            - usr
+            - electroshape
+            - usrcat
+          outputFile:
+            title: Output file name
+            type: string
+            default: usr-similarity.sdf
+          threshold:
+            title: Similarity threshold
+            type: number
+            minimum: 0
+            maximum: 1
+          groupBy:
+            title: Group by field
+            type: string
+            default: std_smi
+
+  sort-sdf:
+    name: Sort the contents of a SDF
+    description: >-
+      Sorts records in a SD-file, optionally keeping top n.
+      Do not use for very large files.
+    version: '1.0.0'
+    category: virtual screening
+    keywords:
+    - rdock
+    - sdfilter
+    - sdsort
+    - filter
+    doc-url: im-virtual-screening/rdock-filter-sdf.md
+    image:
+      name: informaticsmatters/vs-rdock
+      tag: 'stable'
+      project-directory: /data
+      working-directory: /data
+      fix-permissions: true
+    command: >-
+      /code/rdock_filter_sdf_sort_top.sh
+        '{{ inputFile }}' '{{ outputFile }}'
+        '{{ sortField }}'
+        {% if sortDescending %}true{% else %}false{% endif %}
+        {% if top is defined and top > 0 %}{{ top }}{% else %}0{% endif %}
+    variables:
+      order:
+        options:
+        - outputFile
+        - sortField
+        - sortDescending
+        - top
+      inputs:
+        type: object
+        required:
+        - inputFile
+        properties:
+          inputFile:
+            title: Molecules to filter
+            mime-types:
+            - chemical/x-mdl-sdfile
+            type: file
+      outputs:
+        type: object
+        properties:
+          outputFile:
+            title: Output file
+            mime-types:
+            - chemical/x-mdl-sdfile
+            creates: '{{ outputFile }}'
+            type: file
+      options:
+        type: object
+        required:
+        - outputFile
+        - sortField
+        - sortDescending
+        properties:
+          outputFile:
+            title: Output file name
+            type: string
+            pattern: "^[A-Za-z0-9_/\\.\\-]+\\.sdf$"
+          sortField:
+            title: Sort field
+            type: string
+            pattern: "^[A-Za-z0-9_\\.\\- ]+$"
+          sortDescending:
+            title: Sort descending
+            type: boolean
+            default: false
+          top:
+            title: Keep best n records
+            type: integer
+            minimum: 1
+    tests:
+      simple-sort:
+        inputs:
+          inputFile: data/ph4-results-100.sdf
+        options:
+          outputFile: results.sdf
+          sortField: o3da_score_rel
+          sortDescending: true
+        checks:
+          exitCode: 0
+          outputs:
+          - name: results.sdf
+            checks:
+            - exists: true
+            - lineCount: 7545
+      sort-top:
+        inputs:
+          inputFile: data/ph4-results-100.sdf
+        options:
+          outputFile: results.sdf
+          sortField: o3da_score_rel
+          sortDescending: true
+          top: 2
+        checks:
+          exitCode: 0
+          outputs:
+          - name: results.sdf
+            checks:
+            - exists: true
+            - lineCount: 150
+
+  filter-sdf:
+    name: Filter the contents of a SDF
+    description: >-
+      Filters records in a SD-file, sorted within consecutive groups, sorting the results and optionally keeping the top n.
+    version: '1.0.0'
+    category: virtual screening
+    keywords:
+    - rdock
+    - sdfilter
+    - sdsort
+    - filter
+    doc-url: im-virtual-screening/rdock-filter-sdf.md
+    image:
+      name: informaticsmatters/vs-rdock
+      tag: 'stable'
+      project-directory: /data
+      working-directory: /data
+      fix-permissions: true
+    command: >-
+      /code/rdock_filter_sdf_group.sh
+        '{{ inputFile }}' '{{ outputFile }}'
+        '{{ sortField }}'
+        {% if sortDescending %}true{% else %}false{% endif %}
+        {% if top is defined and top > 0 %}{{ top }}{% else %}0{% endif %}
+        {% if groupByField is defined %}'{{ groupByField }}'{% endif %}
+    variables:
+      order:
+        options:
+        - outputFile
+        - sortField
+        - sortDescending
+        - groupByField
+        - top
+      inputs:
+        type: object
+        required:
+        - inputFile
+        properties:
+          inputFile:
+            title: Molecules to filter
+            mime-types:
+            - chemical/x-mdl-sdfile
+            type: file
+      outputs:
+        type: object
+        properties:
+          outputFile:
+            title: Output file
+            mime-types:
+            - chemical/x-mdl-sdfile
+            creates: '{{ outputFile }}'
+            type: file
+      options:
+        type: object
+        required:
+        - outputFile
+        - sortField
+        - sortDescending
+        properties:
+          outputFile:
+            title: Output file name
+            type: string
+            pattern: "^[A-Za-z0-9_/\\.\\-]+\\.sdf$"
+          sortField:
+            title: Sort field
+            type: string
+            pattern: "^[A-Za-z0-9_\\.\\- ]+$"
+          groupByField:
+            title: Group by field
+            type: string
+            pattern: "^[A-Za-z0-9_\\.\\- ]+$"
+          sortDescending:
+            title: Sort descending
+            type: boolean
+            default: false
+          top:
+            title: Keep best n records
+            type: integer
+            minimum: 1
+    tests:
+      group-and-sort:
+        inputs:
+          inputFile: data/ph4-results-100.sdf
+        options:
+          outputFile: results.sdf
+          sortField: o3da_score_rel
+          groupByField: molecule_id
+          sortDescending: true
+        checks:
+          exitCode: 0
+          outputs:
+          - name: results.sdf
+            checks:
+            - exists: true
+            - lineCount: 1509
+      group-and-sort-top:
+        inputs:
+          inputFile: data/ph4-results-100.sdf
+        options:
+          outputFile: results.sdf
+          sortField: o3da_score_rel
+          groupByField: molecule_id
+          sortDescending: true
+          top: 1
+        checks:
+          exitCode: 0
+          outputs:
+          - name: results.sdf
+            checks:
+            - exists: true
+            - lineCount: 75
+
+  sdf2json:
+    name: Convert SDF to JSON format
+    description: >-
+      Converts a SD file to Squonk JSON format
+    version: '1.0.0'
+    category: virtual screening
+    keywords:
+    - convert
+    - format
+    image:
+      name: informaticsmatters/vs-prep
+      tag: 'stable'
+      project-directory: /data
+      working-directory: /data
+      fix-permissions: true
+    command: >-
+      /code/convert_file.py --input-file '{{ inputFile }}'
+      --input-format chemical/x-mdl-sdfile
+      --output-file {{ outputFile }}
+      --output-format squonk/x-dataset-molecule-v2+json
+      --interval 10000
+    variables:
+      inputs:
+        type: object
+        required:
+        - inputFile
+        properties:
+          inputFile:
+            title: Molecules
+            mime-types:
+            - chemical/x-mdl-sdfile
+            type: file
+      outputs:
+        type: object
+        properties:
+          outputFile:
+            title: Output file
+            mime-types:
+            - squonk/x-dataset-molecule-v2+json
+            creates: '{{ outputFile }}'
+            type: file
+            annotation-properties:
+              derived-from: inputFile
+      options:
+        type: object
+        required:
+        - outputFile
+        properties:
+          outputFile:
+            title: Output file name
+            type: string
+            pattern: "^[A-Za-z0-9_/\\.\\-]+\\.json$"
+
+  enumerate-candidates:
+    name: Enumerate microstates, tautomers and undefined chiral centres
+    description: >-
+      Enumerate microstates, tautomers and undefined chiral centres.
+    version: '1.0.0'
+    category: virtual screening
+    keywords:
+    - rdkit
+    - ligand preparation
+    - enumeration
+    - dimorphite_dl
+    - 3d
+    image:
+      name: informaticsmatters/vs-prep
+      tag: 'stable'
+      project-directory: /data
+      working-directory: /data
+      fix-permissions: true
+    command: >-
+      /code/enumerate.py --input '{{ inputFile }}' --output '{{ outputFile }}'
+      {% if fragment is defined %}--fragment-method '{{ fragment }}'{% endif %}
+      {% if enumerateCharges is defined and enumerateCharges %}--enumerate-charges{% endif %}
+      {% if enumerateChirals is defined and enumerateChirals %}--enumerate-chirals{% endif %}
+      {% if enumerateTautomers is defined and enumerateTautomers %}--enumerate-tautomers{% endif %}
+      {% if combinatorial is defined and combinatorial %}--combinatorial{% endif %}
+      {% if minHac is defined %}--min-hac {{ minHac }}{% endif %}
+      {% if maxHac is defined %}--max-hac {{ maxHac }}{% endif %}
+      {% if minPh is defined %}--min-ph {{ minPh }}{% endif %}
+      {% if maxPh is defined %}--max-ph {{ maxPh }}{% endif %}
+      {% if maxTautomers is defined%}--max-tautomers {{ maxTautomers }}{% endif %}
+      {% if minCharge is defined%}--min-charge {{ minCharge }}{% endif %}
+      {% if maxCharge is defined%}--max-charge {{ maxCharge }}{% endif %}
+      {% if numCharges is defined%}--num-charges {{ numCharges }}{% endif %}
+      {% if addHydrogens is defined and addHydrogens %}--add-hydrogens{% endif %}
+      {% if tryEmbedding is defined and tryEmbedding %}--try-embedding{% endif %}
+      {% if readHeader is defined and readHeader %}--read-header{% endif %}
+      {% if writeHeader is defined and writeHeader %}--write-header{% endif %}
+      {% if separator is defined %}--delimiter '{{ separator }}'{% endif %}
+      {% if idColumn is defined %}--id-column '{{ idColumn }}'{% endif %}
+      --interval 100
+    variables:
+      order:
+        options:
+        - outputFile
+        - fragment
+        - enumerateCharges
+        - enumerateChirals
+        - enumerateTautomers
+        - combinatorial
+        - minHac
+        - maxHac
+        - minPh
+        - maxPh
+        - maxTautomers
+        - minCharge
+        - maxCharge
+        - numCharges
+        - addHydrogens
+        - tryEmbedding
+        - readHeader
+        - separator
+        - idColumn
+      inputs:
+        type: object
+        required:
+        - inputFile
+        properties:
+          inputFile:
+            title: Molecules to enumerate
+            mime-types:
+            - chemical/x-csv
+            - chemical/x-mdl-sdfile
+            type: file
+      outputs:
+        type: object
+        properties:
+          enumerated:
+            title: Enumerated molecules
+            mime-types:
+            - chemical/x-mdl-sdfile
+            creates: '{{ outputFile }}'
+            type: file
+            annotation-properties:
+              fields-descriptor:
+                origin: squonk2-job
+                description: Enumerate microstates, tautomers and undefined chiral centres
+                fields:
+                  enum_code:
+                    type: string
+                    description: The type of enumeration (B, T, M, C, X)
+                  std_smi:
+                    type: string
+                    description: The canonical SMILES of the input molecule
+                  enum_smi:
+                    type: string
+                    description: The canonical SMILES of the enumerated molecule
+              derived-from: inputs
+      options:
+        type: object
+        required:
+        - outputFile
+        properties:
+          outputFile:
+            title: Output file name (.sdf)
+            type: string
+            default: enumerated-mols.sdf
+          fragment:
+            title: Fragment method
+            type: string
+            default: hac
+            enum:
+            - hac
+            - mw
+            - none
+          enumerateCharges:
+            title: Enumerate charge forms
+            type: boolean
+            default: true
+          enumerateChirals:
+            title: Enumerate undefined chiral centres
+            type: boolean
+            default: true
+          enumerateTautomers:
+            title: Enumerate tautomers
+            type: boolean
+            default: true
+          combinatorial:
+            title: Combinatorial enumeration of charges and tautomers
+            type: boolean
+            default: false
+          minHac:
+            title: Minimum heavy atom count
+            type: integer
+          maxHac:
+            title: Maximum heavy atom count
+            type: integer
+          minPh:
+            title: Minimum pH for charge enumeration
+            type: number
+            default: 5
+          maxPh:
+            title: Maximum pH for charge enumeration
+            type: number
+            default: 9
+          maxTautomers:
+            title: Maximum number of tautomers to generate
+            type: integer
+            default: 25
+          minCharge:
+            title: Minimum charge on molecule
+            type: integer
+          maxCharge:
+            title: Maximum charge on molecule
+            type: integer
+          numCharges:
+            title: Maximum number of atoms with a charge
+            type: integer
+          addHydrogens:
+            title: Add explicit hydrogens to output
+            type: boolean
+          tryEmbedding:
+            title: Try to embed a 3D molecule to verify the stereochemisty is sane
+            type: boolean
+            default: true
+          readHeader:
+            title: Input has header line (text formats only)
+            type: boolean
+          separator:
+            title: Separator for text formats
+            type: string
+            default: tab
+            enum:
+            - tab
+            - comma
+            - space
+            - pipe
+          idColumn:
+            title: Index (text) or name (SDF) to use for the ID field
+            type: string
+            pattern: "^[A-Za-z0-9_\\.\\- ]+$"
+    tests:
+      simple-execution:
+        inputs:
+          inputFile: data/10.smi
+        options:
+          outputFile: foo/results.sdf
+          fragment: hac
+          enumerateCharges: true
+          enumerateChirals: true
+          enumerateTautomers: true
+          combinatorial: false
+          minHac: 15
+          maxHac: 20
+          numSP3: true
+          minPh: 6
+          maxPh: 8
+          maxTautomers: 5
+          minCharge: -2
+          maxCharge: 2
+          numCharges: 2
+          addHydrogens: true
+          tryEmbedding: true
+          readHeader: false
+          separator: tab
+          idColumn: 1
+        checks:
+          exitCode: 0
+          outputs:
+          - name: foo/results.sdf
+            checks:
+            - exists: true
+
+  ####################
+  # nextflow jobs
+  ####################
+  run-rdock:
+    name: Run rRock docking
+    description: >-
+      Run rDock docking.
+    version: '1.0.0'
+    category: virtual screening
+    keywords:
+    - rdock
+    - docking
+    - nextflow
+    - 3d
+    image:
+      name: informaticsmatters/vs-nextflow
+      tag: 'stable'
+      project-directory: /data
+      working-directory: /data
+      type: nextflow
+      memory: 1Gi
+      cores: 250m
+      fix-permissions: true
+    command: >-
+      nextflow -log {{ DM_INSTANCE_DIRECTORY }}/nextflow.log
+      run {{ CODE_DIRECTORY|default('/code') }}/rdock-docking.nf
+      --ligands '{{ ligandsSDF }}'
+      --protein '{{ proteinMOL2 }}'
+      --prmfile '{{ prmFile }}'
+      --asfile '{{ asFile }}'
+      --num_dockings {{ numDockings }}
+      --output_basename {{ outputFile }}
+      --mode {{ mode }}
+      {% if resultsDir is defined %}--publish_dir {{ resultsDir }}{% endif %}
+      -with-trace {{ DM_INSTANCE_DIRECTORY }}/trace.txt
+      -with-report {{ DM_INSTANCE_DIRECTORY }}/report.html
+    variables:
+      order:
+        inputs:
+        - ligandsSDF
+        - proteinMOL2
+        - prmFile
+        - asFile
+        options:
+        - resultsDir
+        - outputFile
+        - numDockings
+        - mode
+      inputs:
+        type: object
+        required:
+        - ligandsSDF
+        - proteinMOL2
+        - prmFile
+        - asFile
+        properties:
+          ligandsSDF:
+            title: Candidate ligands to process (SDF format)
+            mime-types:
+            - chemical/x-mdl-sdfile
+            type: file
+          proteinMOL2:
+            title: Prepared receptor (MOL2 format)
+            mime-types:
+            - chemical/x-mol2
+            type: file
+          prmFile:
+            title: rDock configuration (.prm file)
+            mime-types:
+            - squonk/x-rdock-prm
+            type: file
+          asFile:
+            title: Cavity definition (.as file)
+            mime-types:
+            - squonk/x-rdock-as
+            type: file
+      outputs:
+        type: object
+        properties:
+          dockedSDF:
+            title: Docked poses
+            mime-types:
+            - chemical/x-mdl-sdfile
+            creates: '{% if resultsDir is defined %}{{ resultsDir }}/{% endif %}{{ outputFile }}.sdf'
+            type: file
+      options:
+        type: object
+        required:
+        - numDockings
+        - outputFile
+        - mode
+        properties:
+          outputFile:
+            title: Base filename for results (no extension)
+            type: string
+            default: results_rdock
+            pattern: "^[A-Za-z0-9_\\.\\-]+$"
+          resultsDir:
+            title: Dir for results
+            type: string
+            pattern: "^[A-Za-z0-9_/\\.\\-]*[A-Za-z0-9_\\.\\-]+$"
+          numDockings:
+            title: Number of dockings
+            type: integer
+            default: 50
+          mode:
+            title: Docking mode
+            type: string
+            default: dock
+            enum:
+            - dock
+            - minimise
+            - score
+    tests:
+      simple-execution:
+        inputs:
+          ligandsSDF: data/candidates-10.sdf
+          proteinMOL2: data/dhfr-receptor-ph7.mol2
+          prmFile: data/docking.prm
+          asFile: data/docking.as
+        options:
+          outputFile: rdock_results
+          numDockings: 1
+          mode: dock
+        checks:
+          exitCode: 0
+          outputs:
+          - name: rdock_results.sdf
+            checks:
+            - exists: true
+
+  run-smina:
+    name: Run smina docking
+    description: >-
+      Run smina docking.
+    version: '1.0.0'
+    category: virtual screening
+    keywords:
+    - smina
+    - docking
+    - nextflow
+    - 3d
+    image:
+      name: informaticsmatters/vs-nextflow
+      tag: 'stable'
+      project-directory: /data
+      working-directory: /data
+      type: nextflow
+      fix-permissions: true
+    command: >-
+      nextflow -log {{ DM_INSTANCE_DIRECTORY }}/nextflow.log
+      run {{ CODE_DIRECTORY|default('/code') }}/smina-docking.nf
+      --ligands '{{ ligands }}'
+      --protein '{{ protein }}'
+      --ligand '{{ ligand }}'
+      --padding {{ boxPadding }}
+      --exhaustiveness {{ exhaustiveness }}
+      --scoring_function '{{ scoringFunction }}'
+      {% if resultsDir is defined %}--publish_dir '{{ resultsDir }}'{% endif %}
+      --output_basename '{{ outputFile }}'
+      -with-trace {{ DM_INSTANCE_DIRECTORY }}/trace.txt
+      -with-report {{ DM_INSTANCE_DIRECTORY }}/report.html
+    variables:
+      order:
+        options:
+        - resultsDir
+        - outputFile
+        - boxPadding
+        - exhaustiveness
+        - scoringFunction
+      inputs:
+        type: object
+        required:
+        - ligands
+        - ligand
+        - protein
+        properties:
+          ligands:
+            title: Candidate ligands to process (SDF format)
+            mime-types:
+            - chemical/x-mdl-sdfile
+            type: file
+          protein:
+            title: Prepared receptor (PDBQT, PDB or MOL2 format)
+            mime-types:
+            - chemical/x-mol2
+            - chemical/x-pdb
+            - chemical/x-pdbqt
+            type: file
+          ligand:
+            title: Ligand file for box (PDBQT, PDB, MOL or MOL2 format)
+            mime-types:
+            - chemical/x-mdl-molfile
+            - chemical/x-mol2
+            - chemical/x-pdb
+            - chemical/x-pdbqt
+            type: file
+      outputs:
+        type: object
+        properties:
+          dockedSDF:
+            title: Docked poses
+            mime-types:
+            - chemical/x-mdl-sdfile
+            creates: '{% if resultsDir is defined %}{{ resultsDir }}/{% endif %}{{ outputFile }}.sdf'
+            type: file
+            annotation-properties:
+              fields-descriptor:
+                origin: squonk2-job
+                description: Run smina docking
+                fields:
+                  minimizedAffinity:
+                    type: number
+                    description: >-
+                      Binding affinity predicted by smina docking
+                    required: true
+                    active: true
+              derived-from: ligands
+      options:
+        type: object
+        required:
+        - boxPadding
+        - exhaustiveness
+        - scoringFunction
+        - outputFile
+        properties:
+          resultsDir:
+            title: Directory for results
+            type: string
+            pattern: "^[A-Za-z0-9_/\\.\\-]*[A-Za-z0-9_\\.\\-]+$"
+          outputFile:
+            title: Base filename for results (no extension)
+            type: string
+            default: results_smina
+            pattern: "^[A-Za-z0-9_\\.\\-]+$"
+          boxPadding:
+            title: Box definition padding
+            type: number
+            default: 4.0
+          exhaustiveness:
+            title: Exhaustiveness setting
+            type: integer
+            default: 8
+          scoringFunction:
+            title: Scoring function to use
+            type: string
+            enum:
+            - ad4_scoring
+            - dkoes_fast
+            - dkoes_scoring
+            - dkoes_scoring_old
+            - vina
+            - vinardo
+
+  oddt-score-interactions:
+    name: ODDT rescoring and interactions
+    description: >-
+      Generate rescoring functions and interactions using ODDT.
+    version: '1.0.0'
+    category: virtual screening
+    keywords:
+    - oddt
+    - docking
+    - nextflow
+    - 3d
+    image:
+      name: informaticsmatters/vs-nextflow
+      tag: 'stable'
+      project-directory: /data
+      working-directory: /data
+      type: nextflow
+      fix-permissions: true
+    command: >-
+      nextflow -log {{ DM_INSTANCE_DIRECTORY }}/nextflow.log
+      run {{ CODE_DIRECTORY|default('/code') }}/oddt-interactions.nf
+      --ligands '{{ ligandsSDF }}'
+      --protein '{{ proteinPDB }}'
+      {% if resultsDir is defined %}--publish_dir '{{ resultsDir }}'{% endif %}
+      --output_filename '{{ outputFile }}'
+      -with-trace {{ DM_INSTANCE_DIRECTORY }}/trace.txt
+      -with-report {{ DM_INSTANCE_DIRECTORY }}/report.html
+    variables:
+      inputs:
+        type: object
+        required:
+        - ligandsSDF
+        - proteinPDB
+        properties:
+          ligandsSDF:
+            title: Candidate ligands to process (SDF format)
+            mime-types:
+            - chemical/x-mdl-sdfile
+            type: file
+          proteinPDB:
+            title: Prepared receptor (PDB format)
+            mime-types:
+            - chemical/x-pdb
+            type: file
+      outputs:
+        type: object
+        properties:
+          scoredSDF:
+            title: Scored poses
+            mime-types:
+            - chemical/x-mdl-sdfile
+            creates: '{% if resultsDir is defined %}{{ resultsDir }}/{% endif %}{{ outputFile }}'
+            type: file
+      options:
+        type: object
+        required:
+        - outputFile
+        properties:
+          resultsDir:
+            title: Directory for results
+            type: string
+            pattern: "^[A-Za-z0-9_/\\.\\-]*[A-Za-z0-9_\\.\\-]+$"
+          outputFile:
+            title: Filename for results
+            type: string
+            default: oddt_interactions.sdf
+            pattern: "^[A-Za-z0-9_\\.\\-]+\\.sdf$"
+
+  ph4-align-to-fragments-simple:
+    name: Align molecules to fragments using PLANTS
+    description: >-
+      Job that performs flexible alignment of candidate molecules to fragments using PLANTS
+    version: '1.0.0'
+    category: ligand based virtual screening
+    keywords:
+    - plants
+    - alignment
+    - fragment merge
+    doc-url: im-virtual-screening/ph4-align-to-fragments.md
+    image:
+      name: informaticsmatters/vs-plants
+      tag: 'stable'
+      project-directory: /data
+      working-directory: /data
+      fix-permissions: true
+      environment:
+      - name: OMP_NUM_THREADS
+        value-from:
+          constant:
+            value: '1'
+    command: >-
+      /code/pharmacophore.py
+        --input '{{ inputs }}'
+        --fragments '{{ fragments }}'
+        --outfile '{{ outputFile }}'
+        --count {{ count }}
+        {% if genTitle is defined and genTitle %}--gen-title{% endif %}
+        {% if header is defined and header %}--header{% endif %}
+        {% if delimiter is defined %}--delimiter '{{ delimiter }}'{% endif %}
+        {% if gen3d is defined and gen3d %}--gen-coords{% endif %}
+        {% if torsionWeight is defined %}--torsion-weight {{ torsionWeight }}{% endif %}
+        {% if rmsd is defined %}--rmsd {{ rmsd }}{% endif %}
+        {% if thresh is defined %}--threshold {{ thresh }}{% endif %}
+        --interval 1000
+    variables:
+      order:
+        options:
+        - outputFile
+        - genTitle
+        - header
+        - delimiter
+        - count
+        - gen3d
+        - torsionWeight
+        - rmsd
+        - thresh
+      inputs:
+        type: object
+        required:
+        - inputs
+        - fragments
+        properties:
+          inputs:
+            title: Candidates to process (.sdf, .smi)
+            mime-types:
+            - chemical/x-mdl-sdfile
+            - chemical/x-daylight-smiles
+            type: file
+          fragments:
+            title: Fragments to align to (SDF format)
+            mime-types:
+            - chemical/x-mdl-sdfile
+            type: file
+      outputs:
+        type: object
+        properties:
+          alignedMolecules:
+            title: Aligned and scored molecules
+            mime-types:
+            - chemical/x-mdl-sdfile
+            creates: '{{ outputFile }}'
+            type: file
+            annotation-properties:
+              fields-descriptor:
+                origin: squonk2-job
+                description: Align molecules to fragments using PLANTS
+                fields:
+                  PH4_SCORE:
+                    type: number
+                    description: >-
+                      Pharmacophore alignment score
+                    required: true
+                    active: true
+              derived-from: inputs
+      options:
+        type: object
+        required:
+        - outputFile
+        - count
+        properties:
+          outputFile:
+            title: Filename for results
+            type: string
+            default: ph4_align.sdf
+            pattern: "^[A-Za-z0-9_\\.\\-\\/]+$"
+          genTitle:
+            title: Generate unique title line for each record
+            type: boolean
+            default: false
+          header:
+            title: SMILES input has header line
+            type: boolean
+            default: false
+          delimiter:
+            title: SMILES input delimiter
+            type: string
+            enum:
+            - tab
+            - comma
+            - space
+            - pipe
+          gen3d:
+            title: Generate 3D coords
+            type: boolean
+            default: false
+          count:
+            title: Number of mols to generate
+            type: integer
+            default: 5
+          torsionWeight:
+            title: PLANTS torsion weight setting
+            type: number
+            default: 5
+          rmsd:
+            title: PLANTS RMSD
+            type: number
+            default: 2
+          thresh:
+            title: PLANTS cuttoff score
+            type: number
+    tests:
+      simple-execution-sdf:
+        inputs:
+          inputs: data/candidates-10.sdf
+          fragments: data/fragments.sdf
+        options:
+          outputFile: foo/results.sdf
+          count: 2
+        checks:
+          exitCode: 0
+          outputs:
+          - name: foo/results.sdf
+            checks:
+            - exists: true
+
+  ph4-align-to-fragments-smiles:
+    name: Align SMILES to fragments using PLANTS
+    description: >-
+      Job that performs flexible alignment of candidate molecules to fragments using PLANTS
+    version: '1.0.0'
+    category: ligand based virtual screening
+    keywords:
+    - plants
+    - alignment
+    - fragment merge
+    doc-url: im-virtual-screening/ph4-align-to-fragments.md
+    image:
+      name: informaticsmatters/vs-plants
+      tag: 'stable'
+      project-directory: /data
+      working-directory: /data
+      fix-permissions: true
+      environment:
+      - name: OMP_NUM_THREADS
+        value-from:
+          constant:
+            value: '1'
+    command: >-
+      /code/pharmacophore.py
+        --smiles {% for smi in smiles %} '{{ smi }}'{% endfor %}
+        --fragments '{{ fragments }}'
+        --outfile '{{ outputFile }}'
+        --count {{ count }}
+        --gen-coords
+        {% if torsionWeight is defined %}--torsion-weight {{ torsionWeight }}{% endif %}
+        {% if rmsd is defined %}--rmsd {{ rmsd }}{% endif %}
+        --interval 1
+    variables:
+      order:
+        options:
+        - smiles
+        - outputFile
+        - count
+        - torsionWeight
+        - rmsd
+      inputs:
+        type: object
+        required:
+        - fragments
+        properties:
+          fragments:
+            title: Fragments to align to (SDF format)
+            mime-types:
+            - chemical/x-mdl-sdfile
+            type: file
+      outputs:
+        type: object
+        properties:
+          alignedMolecules:
+            title: Aligned and scored molecules
+            mime-types:
+            - chemical/x-mdl-sdfile
+            creates: '{{ outputFile }}'
+            type: file
+            annotation-properties:
+              fields-descriptor:
+                origin: squonk2-job
+                description: Align molecules to fragments using PLANTS
+                fields:
+                  PH4_SCORE:
+                    type: number
+                    description: >-
+                      Pharmacophore alignment score
+                    required: true
+                    active: true
+              derived-from: inputs
+      options:
+        type: object
+        required:
+        - smiles
+        - outputFile
+        - count
+        properties:
+          smiles:
+            title: Input SMILES
+            type: array
+            items:
+              type: string
+          outputFile:
+            title: Filename for results
+            type: string
+            default: ph4_align.sdf
+            pattern: "^[A-Za-z0-9_\\.\\-\\/]+$"
+          count:
+            title: Number of mols to generate
+            type: integer
+            default: 5
+          torsionWeight:
+            title: PLANTS torsion weight setting
+            type: number
+            default: 5
+          rmsd:
+            title: PLANTS RMSD
+            type: number
+            default: 2
+    tests:
+      simple-execution:
+        inputs:
+          fragments: data/fragments.sdf
+        options:
+          smiles:
+          - Cc1ccncc1NC(=O)Cc1cccc(Cl)c1
+          - Cc1ccncc1/N=C(\O)Cc1cccc(Cl)c1
+          outputFile: foo/results.sdf
+          count: 4
+        checks:
+          exitCode: 0
+          outputs:
+          - name: foo/results.sdf
+            checks:
+            - exists: true
+
+  ph4-align-to-fragments-workflow:
+    name: Workflow to align molecules to fragments using PLANTS
+    description: >-
+      Workflow that does parallel flexible alignment of candidate molecules to fragments using PLANTS, followed by
+      scoring with open3Dalign.
+    version: '1.0.0'
+    category: ligand based virtual screening
+    keywords:
+    - plants
+    - open3dalign
+    - alignment
+    - fragment merge
+    doc-url: im-virtual-screening/ph4-align-to-fragments.md
+    image:
+      name: informaticsmatters/vs-nextflow
+      tag: 'stable'
+      project-directory: /data
+      working-directory: /data
+      type: nextflow
+      fix-permissions: true
+    command: >-
+      nextflow -log {{ DM_INSTANCE_DIRECTORY }}/nextflow.log
+      run {{ CODE_DIRECTORY|default('/code') }}/frag-merge-pharmacophore.nf
+      --inputs '{{ inputs }}'
+      --fragments '{{ fragments }}'
+      {% if genTitle is defined and genTitle %}--gen_title{% endif %}
+      {% if header is defined and header %}--header{% endif %}
+      {% if delimiter is defined %}--delimiter '{{ delimiter }}'{% endif %}
+      {% if gen3d is defined and gen3d %}--gen3d{% endif %}
+      {% if groupByField is defined %}--group_by_field '{{ groupByField }}'{% endif %}
+      {% if threshPh4 is defined %}--thresh_ph4 '{{ threshPh4 }}'{% endif %}
+      {% if threshO3da is defined %}--thresh_o3da '{{ threshO3da }}'{% endif %}
+      {% if resultsDir is defined %}--publish_dir '{{ resultsDir }}'{% endif %}
+      --output_filename '{{ outputFile }}'
+      --count {{ count }}
+      {% if torsionWeight is defined %}--torsion_weight {{ torsionWeight }}{% endif %}
+      {% if rmsd is defined %}--rmsd {{ rmsd }}{% endif %}
+      {% if crippen is defined and crippen %}--crippen true{% endif %}
+      -with-trace {{ DM_INSTANCE_DIRECTORY }}/trace.txt
+      -with-report {{ DM_INSTANCE_DIRECTORY }}/report.html
+    variables:
+      order:
+        options:
+        - outputFile
+        - resultsDir
+        - genTitle
+        - header
+        - delimiter
+        - count
+        - gen3d
+        - groupByField
+        - torsionWeight
+        - rmsd
+        - crippen
+        - threshPh4
+        - threshO3da
+      inputs:
+        type: object
+        required:
+        - inputs
+        - fragments
+        properties:
+          inputs:
+            title: Candidates to process (.sdf, .smi)
+            mime-types:
+            - chemical/x-mdl-sdfile
+            - chemical/x-daylight-smiles
+            type: file
+          fragments:
+            title: Fragments to align to (SDF format)
+            mime-types:
+            - chemical/x-mdl-sdfile
+            type: file
+      outputs:
+        type: object
+        properties:
+          alignedMolecules:
+            title: Aligned and scored molecules
+            mime-types:
+            - chemical/x-mdl-sdfile
+            creates: '{% if resultsDir is defined %}{{ resultsDir }}/{% endif %}{{ outputFile }}'
+            type: file
+            annotation-properties:
+              fields-descriptor:
+                origin: squonk2-job
+                description: Align molecules to fragments using PLANTS
+                fields:
+                  PH4_SCORE:
+                    type: number
+                    description: >-
+                      Pharmacophore alignment score
+                    required: true
+                    active: true
+                  o3da_score:
+                    type: number
+                    description: >-
+                      Open3DAlign score
+                    required: true
+                    active: true
+                  o3da_score_rel:
+                    type: number
+                    description: >-
+                      Open3DAlign score relative to the best possible score
+                    required: true
+                    active: true
+                  o3da_align:
+                    type: number
+                    description: >-
+                      Open3DAlign align score
+                    required: true
+                    active: true
+              derived-from: inputs
+      options:
+        type: object
+        required:
+        - outputFile
+        - count
+        properties:
+          resultsDir:
+            title: Directory for results
+            type: string
+            pattern: "^[A-Za-z0-9_/\\.\\-]*[A-Za-z0-9_\\.\\-]+$"
+          outputFile:
+            title: Filename for results
+            type: string
+            default: ph4_align.sdf
+            pattern: "^[A-Za-z0-9_\\.\\-]+$"
+          gen3d:
+            title: Generate 3D coords
+            type: boolean
+            default: false
+          genTitle:
+            title: Generate unique title line for each record
+            type: boolean
+            default: false
+          header:
+            title: SMILES input has header line
+            type: boolean
+            default: false
+          delimiter:
+            title: SMILES input delimiter
+            type: string
+            enum:
+            - tab
+            - comma
+            - space
+            - pipe
+          count:
+            title: Number of mols to generate
+            type: integer
+            default: 5
+          groupByField:
+            title: Field to group molecules
+            type: string
+            default: molecule_id
+            pattern: "^[A-Za-z0-9_\\.\\- ]+$"
+          torsionWeight:
+            title: PLANTS torsion weight setting
+            type: number
+            default: 5
+          rmsd:
+            title: PLANTS RMSD
+            type: number
+            default: 2
+          crippen:
+            title: Open3DAlign use Crippen
+            type: boolean
+          threshPh4:
+            title: PLANTS cuttoff score
+            type: number
+          threshO3da:
+            title: Open3DAlign cuttoff score (0 - 1)
+            type: number
+    tests:
+      simple-execution:
+        inputs:
+          inputs: data/candidates-10.sdf
+          fragments: data/fragments.sdf
+        options:
+          outputFile: results.sdf
+          count: 2
+          groupByField: std_smi
+        checks:
+          exitCode: 0
+          outputs:
+          - name: results.sdf
+            checks:
+            - exists: true
+          - name: results-best.sdf
+            checks:
+            - exists: true
+      additional-args:
+        inputs:
+          inputs: data/candidates-10.sdf
+          fragments: data/fragments.sdf
+        options:
+          outputFile: results.sdf
+          count: 1
+          torsionWeight: 2
+          rmsd: 2
+          crippen: true
+        checks:
+          exitCode: 0
+          outputs:
+          - name: results.sdf
+            checks:
+            - exists: true
+          - name: results-best.sdf
+            checks:
+            - exists: false
+
+  enumerate-candidates-multi:
+    name: Enumerate microstates, tautomers and undefined chiral centres
+    description: >-
+      Enumerate microstates, tautomers and undefined chiral centres (parallel execution)
+    version: '1.0.0'
+    category: virtual screening
+    keywords:
+    - rdkit
+    - ligand preparation
+    - enumeration
+    - dimorphite_dl
+    - 3d
+    - nextflow
+    image:
+      name: informaticsmatters/vs-nextflow
+      tag: 'stable'
+      project-directory: /data
+      working-directory: /data
+      type: nextflow
+      fix-permissions: true
+    command: >-
+      nextflow -log {{ DM_INSTANCE_DIRECTORY }}/nextflow.log
+      run {{ CODE_DIRECTORY|default('/code') }}/enumerate.nf
+      --input '{{ inputFile }}' --output '{{ outputFile }}'
+      {% if fragment is defined %}--fragment_method '{{ fragment }}'{% endif %}
+      {% if enumerateCharges is defined and enumerateCharges %}--enumerate_charges{% endif %}
+      {% if enumerateChirals is defined and enumerateChirals %}--enumerate_chirals{% endif %}
+      {% if enumerateTautomers is defined and enumerateTautomers %}--enumerate_tautomers{% endif %}
+      {% if combinatorial is defined and combinatorial %}--combinatorial{% endif %}
+      {% if minHac is defined %}--min_hac {{ minHac }}{% endif %}
+      {% if maxHac is defined %}--max_hac {{ maxHac }}{% endif %}
+      {% if minPh is defined %}--min_ph {{ minPh }}{% endif %}
+      {% if maxPh is defined %}--max_ph {{ maxPh }}{% endif %}
+      {% if maxTautomers is defined%}--max_tautomers {{ maxTautomers }}{% endif %}
+      {% if minCharge is defined%}--min_charge {{ minCharge }}{% endif %}
+      {% if maxCharge is defined%}--max_charge {{ maxCharge }}{% endif %}
+      {% if numCharges is defined%}--num_charges {{ numCharges }}{% endif %}
+      {% if addHydrogens is defined and addHydrogens %}--add_hydrogens{% endif %}
+      {% if tryEmbedding is defined and tryEmbedding %}--try_embedding{% endif %}
+      {% if readHeader is defined and readHeader %}--read_header{% endif %}
+      {% if writeHeader is defined and writeHeader %}--write_header{% endif %}
+      {% if separator is defined %}--delimiter '{{ separator }}'{% endif %}
+      {% if idColumn is defined %}--id_column '{{ idColumn }}'{% endif %}
+      {% if chunkSize is defined and chunkSize %}--chunk_size '{{ chunkSize }}'{% endif %}
+      --interval 100
+      -with-trace {{ DM_INSTANCE_DIRECTORY }}/trace.txt
+      -with-report {{ DM_INSTANCE_DIRECTORY }}/report.html
+    variables:
+      order:
+        options:
+        - outputFile
+        - fragment
+        - enumerateCharges
+        - enumerateChirals
+        - enumerateTautomers
+        - combinatorial
+        - minHac
+        - maxHac
+        - minPh
+        - maxPh
+        - maxTautomers
+        - minCharge
+        - maxCharge
+        - numCharges
+        - addHydrogens
+        - tryEmbedding
+        - readHeader
+        - separator
+        - idColumn
+        - chunkSize
+      inputs:
+        type: object
+        required:
+        - inputFile
+        properties:
+          inputFile:
+            title: Molecules to enumerate
+            mime-types:
+            - chemical/x-csv
+            - chemical/x-mdl-sdfile
+            type: file
+      outputs:
+        type: object
+        properties:
+          enumerated:
+            title: Enumerated molecules
+            mime-types:
+            - chemical/x-mdl-sdfile
+            creates: '{{ outputFile }}'
+            type: file
+            annotation-properties:
+              fields-descriptor:
+                origin: squonk2-job
+                description: Enumerate microstates, tautomers and undefined chiral centres
+                fields:
+                  enum_code:
+                    type: string
+                    description: The type of enumeration (B, T, M, C, X)
+                  std_smi:
+                    type: string
+                    description: The canonical SMILES of the input molecule
+                  enum_smi:
+                    type: string
+                    description: The canonical SMILES of the enumerated molecule
+              derived-from: inputs
+      options:
+        type: object
+        required:
+        - outputFile
+        properties:
+          outputFile:
+            title: Output file name (.sdf)
+            type: string
+            default: enumerated-mols.sdf
+          fragment:
+            title: Fragment method
+            type: string
+            default: hac
+            enum:
+            - hac
+            - mw
+            - none
+          enumerateCharges:
+            title: Enumerate charge forms
+            type: boolean
+            default: true
+          enumerateChirals:
+            title: Enumerate undefined chiral centres
+            type: boolean
+            default: true
+          enumerateTautomers:
+            title: Enumerate tautomers
+            type: boolean
+            default: true
+          combinatorial:
+            title: Combinatorial enumeration of charges and tautomers
+            type: boolean
+            default: false
+          minHac:
+            title: Minimum heavy atom count
+            type: integer
+          maxHac:
+            title: Maximum heavy atom count
+            type: integer
+          minPh:
+            title: Minimum pH for charge enumeration
+            type: number
+            default: 5
+          maxPh:
+            title: Maximum pH for charge enumeration
+            type: number
+            default: 9
+          maxTautomers:
+            title: Maximum number of tautomers to generate
+            type: integer
+            default: 25
+          minCharge:
+            title: Minimum charge on molecule
+            type: integer
+          maxCharge:
+            title: Maximum charge on molecule
+            type: integer
+          numCharges:
+            title: Maximum number of atoms with a charge
+            type: integer
+          addHydrogens:
+            title: Add explicit hydrogens to output
+            type: boolean
+          tryEmbedding:
+            title: Try to embed a 3D molecule to verify the stereochemisty is sane
+            type: boolean
+            default: true
+          readHeader:
+            title: Input has header line (text formats only)
+            type: boolean
+          separator:
+            title: Separator for text formats
+            type: string
+            default: tab
+            enum:
+            - tab
+            - comma
+            - space
+            - pipe
+          idColumn:
+            title: Index (text) or name (SDF) to use for the ID field
+            type: string
+            pattern: "^[A-Za-z0-9_\\.\\- ]+$"
+          chunkSize:
+            title: Size of chunks to split
+            type: integer
+            default: 1000
+            minimum: 100
+    tests:
+      simple-execution:
+        inputs:
+          inputFile: data/100.smi
+        options:
+          outputFile: foo/results.sdf
+          fragment: hac
+          enumerateCharges: true
+          enumerateChirals: true
+          enumerateTautomers: true
+          combinatorial: false
+          minHac: 15
+          maxHac: 20
+          numSP3: true
+          minPh: 6
+          maxPh: 8
+          maxTautomers: 5
+          minCharge: -2
+          maxCharge: 2
+          numCharges: 2
+          addHydrogens: true
+          tryEmbedding: true
+          readHeader: false
+          separator: tab
+          idColumn: 1
+          chunkSize: 10
+        checks:
+          exitCode: 0
+          outputs:
+          - name: foo/results.sdf
+            checks:
+            - exists: true
