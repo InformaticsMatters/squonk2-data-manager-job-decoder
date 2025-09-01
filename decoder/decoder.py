@@ -222,7 +222,7 @@ def get_job_doc_url(
     #   https://raw.githubusercontent.com/InformaticsMatters/
     #       virtual-screening/main/data-manager/docs
 
-    doc_url: Optional[str] = job_definition.get("doc-url", None)
+    doc_url: Optional[str] = job_definition.get("doc-url")
 
     # If doc-url starts 'https://' just return it
     if doc_url and doc_url.startswith("https://"):
@@ -246,9 +246,7 @@ def get_pull_secret_names(job_definition: Dict[str, Any]) -> Set[str]:
     """
     names: Set[str] = set()
 
-    # Check the environment block...
-    pull_secret: Optional[str] = job_definition.get("image", {}).get("pull-secret")
-    if pull_secret:
+    if pull_secret := job_definition.get("image", {}).get("pull-secret"):
         names.add(pull_secret)
 
     return names
@@ -289,15 +287,14 @@ def get_file_assets(job_definition: Dict[str, Any]) -> List[Dict[str, str]]:
 
     # Iterate through the file block...
     file_block: List[Dict[str, Any]] = job_definition.get("image", {}).get("file", [])
-    for item in file_block:
-        if "account-server-asset" in item["content-from"]:
-            file_assets.append(
-                {
-                    "asset-name": item["content-from"]["account-server-asset"]["name"],
-                    "image-file": item["name"],
-                }
-            )
-
+    file_assets.extend(
+        {
+            "asset-name": item["content-from"]["account-server-asset"]["name"],
+            "image-file": item["name"],
+        }
+        for item in file_block
+        if "account-server-asset" in item["content-from"]
+    )
     return file_assets
 
 
@@ -315,15 +312,14 @@ def get_environment_assets(job_definition: Dict[str, Any]) -> List[Dict[str, str
     environment: List[Dict[str, Any]] = job_definition.get("image", {}).get(
         "environment", []
     )
-    for item in environment:
-        if "account-server-asset" in item["value-from"]:
-            env_assets.append(
-                {
-                    "asset-name": item["value-from"]["account-server-asset"]["name"],
-                    "variable": item["name"],
-                }
-            )
-
+    env_assets.extend(
+        {
+            "asset-name": item["value-from"]["account-server-asset"]["name"],
+            "variable": item["name"],
+        }
+        for item in environment
+        if "account-server-asset" in item["value-from"]
+    )
     return env_assets
 
 
@@ -343,12 +339,12 @@ def get_jobs_replaced(job_definition: Dict[str, Any]) -> Optional[List[str]]:
     return list(replaced)
 
 
-def get_outputs(job_definition: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+def get_outputs(job_definition: Dict[str, Any]) -> Dict[str, Any]:
     """Given a Job Definition this function returns the outputs declared."""
     return job_definition.get("variables", {}).get("outputs", {}).get("properties", {})
 
 
-def get_inputs(job_definition: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+def get_inputs(job_definition: Dict[str, Any]) -> Dict[str, Any]:
     """Given a Job Definition this function returns the inputs declared."""
     return job_definition.get("variables", {}).get("inputs", {}).get("properties", {})
 
@@ -358,6 +354,30 @@ def get_image(job_definition: Dict[str, Any]) -> Tuple[str, str]:
     image_name: str = str(job_definition.get("image", {}).get("name", ""))
     image_tag: str = str(job_definition.get("image", {}).get("tag", ""))
     return image_name, image_tag
+
+
+def get_combine_variables(job_definition: Dict[str, Any]) -> Set[str]:
+    """Returns the names of all (input) variables that are expected to representing
+    multiple input files - indications that this is a 'combiner' job.
+    These variables are of type 'files'."""
+    results: Set[str] = {
+        variable
+        for variable, definition in get_inputs(job_definition).items()
+        if definition["type"] == "files"
+    }
+    return results
+
+
+def get_split_variables(job_definition: Dict[str, Any]) -> Set[str]:
+    """Returns the names of all (out) variables that are expected to representing
+    multiple out files - indications that this is a 'splitter' job.
+    These variables are of type 'files'."""
+    results: Set[str] = {
+        variable
+        for variable, definition in get_outputs(job_definition).items()
+        if definition["type"] == "files"
+    }
+    return results
 
 
 def decode(
