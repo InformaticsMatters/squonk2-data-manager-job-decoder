@@ -13,10 +13,6 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import jsonschema
 import yaml
 
-# Supported 'traits'
-TRAIT_COMBINE: str = "combine"
-ALL_TRAITS: Set[str] = {TRAIT_COMBINE}
-
 # The decoding engine implementations.
 # The modules are expected to be called 'decode_<TextEncoding.lower()>'
 from . import decode_jinja2_3_0
@@ -362,12 +358,6 @@ def get_image(job_definition: Dict[str, Any]) -> Tuple[str, str]:
     image_name: str = str(job_definition.get("image", {}).get("name", ""))
     image_tag: str = str(job_definition.get("image", {}).get("tag", ""))
     return image_name, image_tag
-
-
-def get_traits(job_definition: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Returns the array of Job traits. Each trait proeprty name can be found
-    in the module's ALL_TRAITS set."""
-    return job_definition.get("traits", [])
 
 
 def decode(
