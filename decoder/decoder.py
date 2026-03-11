@@ -323,23 +323,19 @@ def get_environment_assets(job_definition: Dict[str, Any]) -> List[Dict[str, str
     return env_assets
 
 
-def get_environment_constants(job_definition: Dict[str, Any]) -> List[Dict[str, str]]:
-    """Given a Job definition this function returns the list of all the
-    environment-based image constants declared. What's returned is a list
-    of the environment variable's name and its value.
+def get_environment_constants(job_definition: Dict[str, Any]) -> Dict[str, str]:
+    """Given a Job definition this function returns all the
+    environment-based image constants declared. What's returned is a map
+    of environment variable names and values.
     """
-    env_constants: List[Dict[str, str]] = []
+    env_constants: Dict[str, str] = {}
     # Iterate through the environment block...
     environment: List[Dict[str, Any]] = job_definition.get("image", {}).get(
         "environment", []
     )
-    env_constants.extend(
-        {
-            item["name"]: item["value-from"]["constant"]["value"],
-        }
-        for item in environment
-        if "constant" in item["value-from"]
-    )
+    for item in environment:
+        if "value-from" in item and "constant" in item["value-from"]:
+            env_constants[item["name"]] = item["value-from"]["constant"]["value"]
 
     return env_constants
 

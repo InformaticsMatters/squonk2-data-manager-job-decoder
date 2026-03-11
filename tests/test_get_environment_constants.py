@@ -22,8 +22,9 @@ def test_get_environment_constants():
     }
 
     # Act
-    env_assets = decoder.get_environment_constants(job_definition)
+    env_constants = decoder.get_environment_constants(job_definition)
 
     # Assert
-    assert len(env_assets) == 1
-    assert env_assets[0]["BLOB"] == "42"
+    assert len(env_constants) == 1
+    assert "BLOB" in env_constants
+    assert env_constants["BLOB"] == "42"
