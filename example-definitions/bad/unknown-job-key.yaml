@@ -1,0 +1,37 @@
+---
+# Expected to FAIL validation: 'options' is not a property of a Job - it belongs
+# under 'variables'. The Job object now sets 'additionalProperties: false'.
+#
+# A real Job carried exactly this mistake for years while the Job object
+# accepted anything: the options were silently ignored, so the Job could not be
+# run from the Data Manager at all - see InformaticsMatters/virtual-screening#32.
+kind: DataManagerJobDefinition
+kind-version: '2021.1'
+name: Unknown job key
+collection: bad-examples
+
+jobs:
+  a-job:
+    name: A Job
+    description: >-
+      A Job with an 'options' block placed directly on the Job rather than
+      under 'variables'.
+    version: '1.0.0'
+    category: test
+    keywords:
+    - test
+    image:
+      name: example/image
+      tag: '1.0.0'
+      project-directory: /data
+      working-directory: /data
+    command: >-
+      echo '{{ greeting }}'
+    options:
+      type: object
+      required:
+      - greeting
+      properties:
+        greeting:
+          title: Greeting
+          type: string

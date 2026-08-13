@@ -37,6 +37,7 @@ required:
 - kind-version
 - collection
 - jobs
+additionalProperties: false
 
 # Sub-object definitions ------------------------------------------------------
 # Things like the Job structure, Image structure etc.
@@ -57,6 +58,7 @@ definitions:
   # An individual Job
   job:
     type: object
+    additionalProperties: false
     properties:
       name:
         type: string
@@ -819,6 +821,7 @@ definitions:
   # Test output checks
   test-checks-output:
     type: object
+    additionalProperties: false
     properties:
       name:
         type: string

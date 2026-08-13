@@ -1,0 +1,30 @@
+---
+# Expected to FAIL validation: 'repository-url' is not a property of the
+# top-level object, which now sets 'additionalProperties: false'.
+#
+# Real Job Definitions carried 'repository-url' and 'repository-tag' for years
+# while the top-level object accepted anything. Nothing ever read them and both
+# values were wrong - see InformaticsMatters/virtual-screening#33.
+kind: DataManagerJobDefinition
+kind-version: '2021.1'
+name: Unknown top-level key
+collection: bad-examples
+
+repository-url: https://example.com/not-a-real-property.yaml
+
+jobs:
+  a-job:
+    name: A Job
+    description: >-
+      A Job whose definition file carries an unknown top-level key.
+    version: '1.0.0'
+    category: test
+    keywords:
+    - test
+    image:
+      name: example/image
+      tag: '1.0.0'
+      project-directory: /data
+      working-directory: /data
+    command: >-
+      echo hello
