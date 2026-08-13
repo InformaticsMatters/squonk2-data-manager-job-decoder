@@ -538,12 +538,83 @@ definitions:
         - file
         - files
       annotation-properties:
-        type: object
-        additionalProperties: true
+        $ref: '#/definitions/annotation-properties'
     required:
     - title
     - creates
     - type
+
+  # The annotations that can be attached to an output variable.
+  # These mirror the annotation classes implemented by the
+  # squonk2-data-manager-metadata package, i.e. FieldsDescriptorAnnotation
+  # and ServiceExecutionAnnotation.
+  annotation-properties:
+    type: object
+    additionalProperties: false
+    properties:
+      fields-descriptor:
+        $ref: '#/definitions/fields-descriptor-annotation'
+      derived-from:
+        type: string
+      service-execution:
+        $ref: '#/definitions/service-execution-annotation'
+
+  # A description of the fields found in the output file.
+  fields-descriptor-annotation:
+    type: object
+    additionalProperties: false
+    properties:
+      origin:
+        type: string
+      description:
+        type: string
+      fields:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/fields-descriptor-field'
+    required:
+    - origin
+    - description
+
+  # An individual field within a fields descriptor.
+  # The field's name is the key it is declared under.
+  fields-descriptor-field:
+    type: object
+    additionalProperties: false
+    properties:
+      type:
+        type: string
+      description:
+        type: string
+      required:
+        type: boolean
+      active:
+        type: boolean
+      expression:
+        type: string
+    required:
+    - type
+    - description
+
+  # A reference to the service that produced the output.
+  # Only 'service_ref' is required - the remaining properties are
+  # optional, even though the corresponding metadata class expects them.
+  service-execution-annotation:
+    type: object
+    additionalProperties: false
+    properties:
+      service_ref:
+        type: string
+      service:
+        type: string
+      service_version:
+        type: string
+      service_user:
+        type: string
+      service_name:
+        type: string
+    required:
+    - service_ref
 
   # Variables (options)
   job-option-variables:
@@ -606,11 +677,45 @@ definitions:
           - type: number
           - type: boolean
       items:
-        type: object
-        additionalProperties: true
+        $ref: '#/definitions/job-option-property-items'
     required:
     - title
     - type
+
+  # The sub-schema for an array-typed option variable.
+  # This is a (restricted) JSON-Schema object, not free-form data.
+  job-option-property-items:
+    type: object
+    additionalProperties: false
+    properties:
+      title:
+        type: string
+      type:
+        type: string
+      oneOf:
+        type: array
+        items:
+          $ref: '#/definitions/job-option-property-items-choice'
+      anyOf:
+        type: array
+        items:
+          $ref: '#/definitions/job-option-property-items-choice'
+
+  # An individual choice offered by an array-typed option variable.
+  job-option-property-items-choice:
+    type: object
+    additionalProperties: false
+    properties:
+      title:
+        type: string
+      type:
+        type: string
+      const:
+        type: string
+      enum:
+        type: array
+        items:
+          type: string
 
   # An individual Test.
   # Consists of a identity (i.e. 'test-filter-molecules')
