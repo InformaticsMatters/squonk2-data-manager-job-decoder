@@ -31,6 +31,51 @@ _MINIMAL: Dict[str, Any] = {
 }
 
 
+def _job_with_output_annotations(
+    annotation_properties: Dict[str, Any]
+) -> Dict[str, Any]:
+    """A copy of the minimal Job Definition whose single output variable
+    carries the given annotation properties.
+    """
+    text: Dict[str, Any] = deepcopy(_MINIMAL)
+    demo_job: Dict[str, Any] = text["jobs"]["demo"]
+    demo_job["variables"] = {
+        "outputs": {
+            "type": "object",
+            "properties": {
+                "outputFile": {
+                    "title": "Output file",
+                    "creates": "{{ outputFile }}",
+                    "type": "file",
+                    "annotation-properties": annotation_properties,
+                }
+            },
+        }
+    }
+    return text
+
+
+def _job_with_option_items(items: Dict[str, Any]) -> Dict[str, Any]:
+    """A copy of the minimal Job Definition whose single (array) option
+    variable is built from the given 'items' sub-schema.
+    """
+    text: Dict[str, Any] = deepcopy(_MINIMAL)
+    demo_job: Dict[str, Any] = text["jobs"]["demo"]
+    demo_job["variables"] = {
+        "options": {
+            "type": "object",
+            "properties": {
+                "properties": {
+                    "title": "Properties",
+                    "type": "array",
+                    "items": items,
+                }
+            },
+        }
+    }
+    return text
+
+
 def test_validate_minimal():
     # Arrange
 
@@ -358,3 +403,311 @@ def test_validate_replaces():
 
     # Assert
     assert error is None
+
+
+# Output variable annotation properties.
+#
+# Only three annotations are recognised: 'fields-descriptor', 'derived-from'
+# and 'service-execution'. The tests below record every combination, and every
+# field shape, found in the Job Definitions we publish.
+
+
+def test_validate_annotation_properties_fields_descriptor():
+    # Arrange
+    text: Dict[str, Any] = _job_with_output_annotations(
+        {
+            "fields-descriptor": {
+                "origin": "squonk2-job",
+                "description": "Something",
+                "fields": {
+                    "smiles": {"type": "string", "description": "Molecule"},
+                },
+            }
+        }
+    )
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
+def test_validate_annotation_properties_derived_from():
+    # Arrange
+    text: Dict[str, Any] = _job_with_output_annotations({"derived-from": "inputFile"})
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
+def test_validate_annotation_properties_derived_from_and_fields_descriptor():
+    # Arrange
+    text: Dict[str, Any] = _job_with_output_annotations(
+        {
+            "derived-from": "inputFile",
+            "fields-descriptor": {
+                "origin": "squonk2-job",
+                "description": "Something",
+                "fields": {
+                    "smiles": {"type": "string", "description": "Molecule"},
+                },
+            },
+        }
+    )
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
+def test_validate_annotation_properties_with_service_execution():
+    # Arrange
+    text: Dict[str, Any] = _job_with_output_annotations(
+        {
+            "derived-from": "inputFile",
+            "fields-descriptor": {
+                "origin": "squonk2-job",
+                "description": "Something",
+                "fields": {
+                    "smiles": {"type": "string", "description": "Molecule"},
+                },
+            },
+            "service-execution": {"service_ref": "https://example.com/service"},
+        }
+    )
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
+def test_validate_annotation_properties_fields_descriptor_without_fields():
+    # Arrange
+    text: Dict[str, Any] = _job_with_output_annotations(
+        {"fields-descriptor": {"origin": "squonk2-job", "description": "Something"}}
+    )
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
+def test_validate_annotation_properties_all_observed_field_shapes():
+    # Arrange
+    text: Dict[str, Any] = _job_with_output_annotations(
+        {
+            "fields-descriptor": {
+                "origin": "squonk2-job",
+                "description": "Something",
+                "fields": {
+                    "a": {"type": "string", "description": "A"},
+                    "b": {"type": "string", "description": "B", "required": True},
+                    "c": {
+                        "type": "string",
+                        "description": "C",
+                        "required": True,
+                        "active": True,
+                    },
+                    "d": {
+                        "type": "number",
+                        "description": "D",
+                        "expression": "1 + 1",
+                    },
+                    "e": {
+                        "type": "number",
+                        "description": "E",
+                        "required": False,
+                        "expression": "1 + 1",
+                    },
+                    "f": {
+                        "type": "number",
+                        "description": "F",
+                        "required": False,
+                        "active": False,
+                        "expression": "1 + 1",
+                    },
+                },
+            }
+        }
+    )
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
+def test_validate_annotation_properties_rejects_unknown_annotation():
+    # Arrange
+    text: Dict[str, Any] = _job_with_output_annotations({"derived-form": "inputFile"})
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is not None
+
+
+def test_validate_annotation_properties_rejects_misplaced_derived_from():
+    # Arrange
+    # 'derived-from' belongs beside 'fields-descriptor', not inside it.
+    text: Dict[str, Any] = _job_with_output_annotations(
+        {
+            "fields-descriptor": {
+                "origin": "squonk2-job",
+                "description": "Something",
+                "derived-from": "inputFile",
+                "fields": {
+                    "smiles": {"type": "string", "description": "Molecule"},
+                },
+            }
+        }
+    )
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is not None
+
+
+def test_validate_annotation_properties_rejects_unknown_field_property():
+    # Arrange
+    text: Dict[str, Any] = _job_with_output_annotations(
+        {
+            "fields-descriptor": {
+                "origin": "squonk2-job",
+                "description": "Something",
+                "fields": {
+                    "smiles": {
+                        "type": "string",
+                        "description": "Molecule",
+                        "requried": True,
+                    },
+                },
+            }
+        }
+    )
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is not None
+
+
+def test_validate_annotation_properties_rejects_non_string_derived_from():
+    # Arrange
+    text: Dict[str, Any] = _job_with_output_annotations({"derived-from": ["inputFile"]})
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is not None
+
+
+def test_validate_annotation_properties_rejects_fields_descriptor_without_origin():
+    # Arrange
+    text: Dict[str, Any] = _job_with_output_annotations(
+        {"fields-descriptor": {"description": "Something"}}
+    )
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is not None
+
+
+# Option variable 'items'.
+#
+# 'items' is the JSON-Schema sub-schema for an array-typed option,
+# not a free-form object.
+
+
+def test_validate_option_items_type_only():
+    # Arrange
+    text: Dict[str, Any] = _job_with_option_items({"type": "string"})
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
+def test_validate_option_items_one_of():
+    # Arrange
+    text: Dict[str, Any] = _job_with_option_items(
+        {
+            "type": "string",
+            "oneOf": [
+                {"const": "atom-count", "title": "Atom count"},
+                {"const": "ring-count", "title": "Ring count"},
+            ],
+        }
+    )
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
+def test_validate_option_items_any_of():
+    # Arrange
+    text: Dict[str, Any] = _job_with_option_items(
+        {
+            "title": "Model ID",
+            "type": "string",
+            "anyOf": [
+                {"type": "string", "enum": ["herg"], "title": "hERG model"},
+                {"type": "string", "enum": ["AMES"], "title": "AMES model"},
+            ],
+        }
+    )
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is None
+
+
+def test_validate_option_items_rejects_unknown_property():
+    # Arrange
+    text: Dict[str, Any] = _job_with_option_items(
+        {"type": "string", "one-of": [{"const": "atom-count"}]}
+    )
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is not None
+
+
+def test_validate_option_items_rejects_unknown_choice_property():
+    # Arrange
+    text: Dict[str, Any] = _job_with_option_items(
+        {"type": "string", "oneOf": [{"const": "atom-count", "titel": "Atom count"}]}
+    )
+
+    # Act
+    error = decoder.validate_job_schema(text)
+
+    # Assert
+    assert error is not None
